@@ -176,5 +176,5 @@ pyrightconfig.json
 # Idea
 .idea/
 .vscode/
-
+logs/
 # End of https://www.toptal.com/developers/gitignore/api/python

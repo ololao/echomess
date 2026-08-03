@@ -1,3 +1,6 @@
 from fastapi import FastAPI
 
-app = FastAPI
+from .room_websocket import router
+
+app = FastAPI()
+app.include_router(router)

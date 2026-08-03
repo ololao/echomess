@@ -10,4 +10,5 @@ dependencies = [
     "pydantic-settings>=2.14.2",
     "redis>=8.1.0",
     "uvicorn[standard]>=0.52.1",
+    "uvloop>=0.22.1",
 ]

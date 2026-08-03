@@ -7,7 +7,9 @@ from .settings import settings
 
 
 async def get_redis():
-    async with aioredis.from_url(settings.get_redis_url()) as redis:
+    async with aioredis.from_url(
+        settings.get_redis_url(), decode_responses=True
+    ) as redis:
         yield redis
 
 

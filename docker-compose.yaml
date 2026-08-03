@@ -1,0 +1,67 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: echomess-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    dns_search: ""
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "-a",
+          "${REDIS_PASSWORD}",
+          "--no-auth-warning",
+          "ping",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - internal
+
+  chat:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: echomess-chat
+    restart: unless-stopped
+    command: uv run uvicorn src.routes.app:app --host 0.0.0.0 --port 8000 --loop uvloop
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/backend/logs
+    dns_search: ""
+    networks:
+      - external
+      - internal
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: echomess-nginx
+    restart: unless-stopped
+    ports:
+      - "81:81"
+    depends_on:
+      - chat
+    networks:
+      - external
+      - internal
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  external:
+  internal:
