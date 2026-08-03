@@ -1,0 +1,7 @@
+[project]
+name = "echomess"
+version = "0.1.0"
+description = "Simple Python messenger using Sebsocket's"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
