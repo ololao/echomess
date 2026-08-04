@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import jwt
+
 from src.core import settings
 
 
@@ -38,7 +39,7 @@ def create_tokens(access: dict, refresh: dict):
         minutes=settings.REFRESH_TOKEN_EXPIRE_DAY
     )
     access_data.update({"exp": access_token_exp, "token_type": "access"})
-    refresh.update({"exp": refresh_token_exp, "token_type": "refresh"})
+    refresh_data.update({"exp": refresh_token_exp, "token_type": "refresh"})
     return JWTTokens(
         access=jwt.encode(
             access_data, key=settings.JWT_KEY, algorithm=settings.JWT_ALGORITHM

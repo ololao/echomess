@@ -29,7 +29,7 @@ services:
       dockerfile: ./backend/Dockerfile
     container_name: echomess-chat
     restart: unless-stopped
-    command: uv run uvicorn src.routes.app:app --host 0.0.0.0 --port 8000 --loop uvloop
+    command: uv run uvicorn src.app:app --host 0.0.0.0 --port 8000 --loop uvloop
     ports:
       - "8000:8000"
     environment:
@@ -58,6 +58,26 @@ services:
     networks:
       - external
       - internal
+  db:
+    image: postgres:16.4
+    restart: always
+    container_name: echomess-db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    networks:
+      - internal
+
 volumes:
   redis-data:
     driver: local
