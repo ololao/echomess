@@ -1,0 +1,3 @@
+
+class RedisUrlRepository:
+    pass

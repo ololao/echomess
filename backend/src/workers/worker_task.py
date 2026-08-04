@@ -18,11 +18,11 @@ async def worker_task(redis: Redis, room_id: str):
         try:
             async for message in pubsub.listen():
                 if message["type"] == "message" and room_id in web_rooms:
-                    for wb in web_rooms[room_id]:
+                    for wb in list(web_rooms[room_id]):
                         try:
-                            await wb.send_json(message["data"])
+                            await wb.send_text(message["data"])
                         except Exception as e:
-                            logr.error(f"Worker Task await wb.send_json Error - {e}")
+                            logr.error(f"Worker Task await wb.send_text Error - {e}")
         except CancelledError:
             logr.info("Task cancelled, unsubscribe")
             await pubsub.unsubscribe(room_key)

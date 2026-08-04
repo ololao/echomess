@@ -1,3 +1,3 @@
-from .room_websocket import router
+from .router import router
 
 __all__ = ["router"]
