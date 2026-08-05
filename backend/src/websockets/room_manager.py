@@ -1,14 +1,19 @@
 import asyncio
 
 from src.core import logr
+from src.rooms import RoomsService
 from src.workers import web_rooms, worker_task, worker_tasks
 
 
 class WebsocketRoomManager:
-    def __init__(self, redis) -> None:
+    def __init__(self, redis, room_service: RoomsService) -> None:
         self.redis = redis
+        self.room_service = room_service
 
-    def connect(self, room_id, websocket):
+    async def connect(self, room_id, websocket):
+        room = await self.room_service.check_room_availability(room_id)
+        if room is None:
+            raise ValueError('Room does not exist')
         if room_id not in worker_tasks:
             logr.info("Room_id not in worker_tasks, create worker task")
             worker_tasks[room_id] = asyncio.create_task(

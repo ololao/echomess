@@ -1,12 +1,20 @@
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.core import settings
+from src.database import Base
+
+# import table's to create
+from src.message import Message
+from src.rooms import Rooms
+from src.users import User
 
 
+@asynccontextmanager
 async def lifespan(app: FastAPI):
     engine = create_async_engine(
         url=settings.get_db_url(),
@@ -14,6 +22,8 @@ async def lifespan(app: FastAPI):
         pool_size=10,
         max_overflow=20,
     )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
     SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 

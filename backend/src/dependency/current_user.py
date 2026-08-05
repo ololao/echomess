@@ -1,7 +1,6 @@
-from collections.abc import Coroutine
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 
 from src.security import decode_refresh_token

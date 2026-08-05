@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MessangeCreate(BaseModel):
@@ -8,3 +8,4 @@ class MessangeCreate(BaseModel):
 class Messange(MessangeCreate):
     created_at: str
     user_id: str
+    model_config = ConfigDict(from_attributes=True)

@@ -2,8 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
-from src.users.repository import UsersRepository
-
+from .repository import UsersRepository
 from .services import UsersService
 
 

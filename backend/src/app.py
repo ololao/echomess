@@ -7,7 +7,7 @@ from src.core import settings
 from .lifespan import lifespan
 from .websockets import websocket_router
 
-app = FastAPI(lifespan=lifespan)  # pyright: ignore[reportArgumentType]
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.COOKIE_KEY,
