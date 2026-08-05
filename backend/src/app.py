@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
+from src.auth import auth_router
 from src.core import settings
 
 from .lifespan import lifespan
-from .websockets import router
+from .websockets import websocket_router
 
 app = FastAPI(lifespan=lifespan)  # pyright: ignore[reportArgumentType]
 app.add_middleware(
@@ -15,4 +16,5 @@ app.add_middleware(
     same_site="lax",
     https_only=True,
 )
-app.include_router(router)
+app.include_router(websocket_router)
+app.include_router(auth_router)

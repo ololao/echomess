@@ -49,3 +49,9 @@ class UsersRepository:
             user.status = status
             await db.commit()
             return user
+
+    async def get_user(self, user_id: str):
+        query = select(User).where(User.id == user_id)
+        async for db in self.db():
+            user: User | None = await db.scalar(query)
+            return user

@@ -23,3 +23,7 @@ class UsersService:
 
     async def change_status(self, user_id: str, status: UserStatus):
         return await self.repository.change_status(user_id=user_id, status=status)
+
+    async def get_user(self, user_id: str):
+        user = await self.repository.get_user(user_id=user_id)
+        return user

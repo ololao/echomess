@@ -1,3 +1,3 @@
-from .router import router
+from .router import websocket_router
 
-__all__ = ["router"]
+__all__ = ["websocket_router"]

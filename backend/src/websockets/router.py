@@ -4,10 +4,10 @@ from src.core import logr
 
 from .dependency import Manager
 
-router = APIRouter()
+websocket_router = APIRouter()
 
 
-@router.websocket("/{room_id}")
+@websocket_router.websocket("/{room_id}")
 async def websocket_endpoint(
     websocket: WebSocket, room_id: str, manager: Manager, request: Request
 ):
