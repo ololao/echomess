@@ -1,18 +1,15 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 
 from src.core import logr
 
-from .dependency import Manager, PubSub
+from .dependency import Manager
 
 router = APIRouter()
 
 
 @router.websocket("/{room_id}")
 async def websocket_endpoint(
-    websocket: WebSocket,
-    room_id: str,
-    manager: Manager,
-    pubsub: PubSub,
+    websocket: WebSocket, room_id: str, manager: Manager, request: Request
 ):
     room_key = f"room:{room_id}"
     client_host = websocket.client.host if websocket.client else "NO HOST"
@@ -23,7 +20,7 @@ async def websocket_endpoint(
     try:
         while True:
             data = await websocket.receive_text()
-            await pubsub.publish(room_key, data)
+            await request.app.state.redis.publish(room_key, data)
     except WebSocketDisconnect:
         pass
     finally:

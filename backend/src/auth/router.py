@@ -1,3 +1,10 @@
 from fastapi import APIRouter
 
-router = APIRouter(prefix='/auth')
+from .codes import code_router
+from .jwt import jwt_router
+from .urls import url_router
+
+auth_router = APIRouter(prefix="/auth")
+auth_router.include_router(code_router)
+auth_router.include_router(url_router)
+auth_router.include_router(jwt_router)

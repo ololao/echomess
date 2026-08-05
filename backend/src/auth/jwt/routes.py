@@ -1,3 +1,3 @@
 from fastapi import APIRouter
 
-router = APIRouter()
+jwt_router = APIRouter()
