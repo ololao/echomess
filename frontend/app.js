@@ -16,6 +16,10 @@ const $ = (selector) => document.querySelector(selector);
 
 const els = {
   authGate: $("#authGate"),
+  landing: $("#landing"),
+  enterBtn: $("#enterBtn"),
+  landingLoginBtn: $("#landingLoginBtn"),
+  landingRegisterBtn: $("#landingRegisterBtn"),
   appView: $("#appView"),
   connectionStatus: $("#connectionStatus"),
   refreshSessionBtn: $("#refreshSessionBtn"),
@@ -111,6 +115,7 @@ function setToken(token) {
   if (token) {
     localStorage.setItem(TOKEN_KEY, token);
     setStatus("ready", "online");
+    els.landing.hidden = true;
     els.authGate.hidden = true;
     els.appView.hidden = false;
     els.authUserLabel.textContent = `Вход выполнен: ${shorten(state.userId)}`;
@@ -118,12 +123,20 @@ function setToken(token) {
   } else {
     localStorage.removeItem(TOKEN_KEY);
     setStatus("offline", "idle");
-    els.authGate.hidden = false;
+    els.landing.hidden = false;
+    els.authGate.hidden = true;
     els.appView.hidden = true;
     els.authUserLabel.textContent = "Вход не выполнен";
     setTrace("Готово", "Войди или зарегистрируйся, потом открывай комнаты.", "warn");
   }
   syncComposer();
+}
+
+function showAuthGate(mode = state.mode) {
+  els.landing.hidden = true;
+  els.authGate.hidden = false;
+  els.appView.hidden = true;
+  setMode(mode);
 }
 
 async function api(path, options = {}, retry = true) {
@@ -451,6 +464,10 @@ async function handleCallbackRoute() {
 
 els.loginTab.addEventListener("click", () => setMode("login"));
 els.registerTab.addEventListener("click", () => setMode("register"));
+
+els.enterBtn.addEventListener("click", () => showAuthGate("login"));
+els.landingLoginBtn.addEventListener("click", () => showAuthGate("login"));
+els.landingRegisterBtn.addEventListener("click", () => showAuthGate("register"));
 
 els.authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
