@@ -1,33 +1,24 @@
-from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+import asyncio
+
+import resend
 
 from src.core import settings
 
-conf = ConnectionConfig(
-    MAIL_USERNAME=settings.EMAIL_USERNAME,
-    MAIL_PASSWORD=settings.EMAIL_PASSWORD,
-    MAIL_FROM=settings.EMAIL_FROM,
-    MAIL_PORT=settings.EMAIL_PORT,
-    MAIL_SERVER=settings.EMAIL_SERVER,
-    MAIL_FROM_NAME="ECHOMESS",
-    MAIL_STARTTLS=settings.EMAIL_STARTTLS,
-    MAIL_SSL_TLS=settings.EMAIL_SSL_TLS,
-    USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True,
-)
+resend.api_key = settings.RESEND_API_KEY.get_secret_value()
 
 
 class EmailSender:
     @staticmethod
     async def _send_email(email: str, subject: str, html: str) -> None:
-        message = MessageSchema(
-            subject=subject,
-            recipients=[email],
-            body=html,
-            subtype=MessageType.html,
+        await asyncio.to_thread(
+            resend.Emails.send,
+            {
+                "from": settings.EMAIL_FROM,
+                "to": [email],
+                "subject": subject,
+                "html": html,
+            },
         )
-
-        fm = FastMail(conf)
-        await fm.send_message(message)
 
     @staticmethod
     async def send_url(email: str, url: str):

@@ -43,14 +43,8 @@ services:
       - DB_NAME=${DB_NAME}
       - SCHEMA=${SCHEMA}
       - DOMAIN=${DOMAIN}
-      - EMAIL_USERNAME=${EMAIL_USERNAME}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - EMAIL_FROM=${EMAIL_FROM}
-      - EMAIL_SERVER=${EMAIL_SERVER:-smtp.gmail.com}
-      - EMAIL_PORT=${EMAIL_PORT:-587}
-      - EMAIL_STARTTLS=${EMAIL_STARTTLS:-true}
-      - EMAIL_SSL_TLS=${EMAIL_SSL_TLS:-false}
-      - EMAIL_TIMEOUT=${EMAIL_TIMEOUT:-60}
+      - RESEND_API_KEY=${RESEND_API_KEY}
       - COOKIE_KEY=${COOKIE_KEY}
     depends_on:
       redis:

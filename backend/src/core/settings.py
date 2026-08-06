@@ -25,14 +25,8 @@ class Settings(BaseSettings):
     SCHEMA: str
     DOMAIN: str
 
-    EMAIL_USERNAME: str
-    EMAIL_PASSWORD: SecretStr
     EMAIL_FROM: str
-    EMAIL_SERVER: str = "smtp.gmail.com"
-    EMAIL_PORT: int = 587
-    EMAIL_STARTTLS: bool = True
-    EMAIL_SSL_TLS: bool = False
-    EMAIL_TIMEOUT: int = 60
+    RESEND_API_KEY: SecretStr
 
     COOKIE_KEY: str
     COOKIE_HTTP_ONLY: bool = False  # False for local develop
