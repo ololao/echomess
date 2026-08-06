@@ -22,7 +22,7 @@ def get_bearer_token(connection: HTTPConnection):
     if authorization is None:
         raise_not_authenticated(connection)
         return
-    scheme, _, token = authorization.split()
+    scheme, token = authorization.split()
     if scheme.lower() == "bearer" and token:
         return token
     raise_not_authenticated(connection)

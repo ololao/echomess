@@ -21,7 +21,7 @@ class WebsocketRoomManager:
                 worker_task(self.redis, room_id, event)
             )
             await event.wait()
-        if not web_rooms[room_id]:
+        if web_rooms.get(room_id, None) is None:
             web_rooms[room_id] = []
         web_rooms[room_id].append(websocket)
 
@@ -29,7 +29,7 @@ class WebsocketRoomManager:
         logr.info("Client is out of the room")
         if websocket in web_rooms[room_id]:
             web_rooms[room_id].remove(websocket)
-        if not web_rooms[room_id]:
+        if not web_rooms.get(room_id, None):
             del web_rooms[room_id]
             logr.info("Remove worker task")
             worker_task_obj = worker_tasks.pop(room_id, None)
