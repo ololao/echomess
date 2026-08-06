@@ -27,9 +27,9 @@
       <section id="authGate" class="auth-gate">
         <section class="auth-card">
           <div class="auth-copy">
-            <p class="eyebrow">secure entry</p>
-            <h1>Сначала аккаунт. Потом комнаты.</h1>
-            <p class="lead">Комнаты и websocket требуют bearer token. Без входа backend вернет 401/403, поэтому рабочая зона открывается только после авторизации.</p>
+            <p class="eyebrow">welcome</p>
+            <h1>Зарегистрируйся и пиши.</h1>
+            <p class="lead">Создавай комнаты, подключайся по ID и общайся в реальном времени.</p>
           </div>
 
           <section class="panel auth-panel">
@@ -110,7 +110,8 @@
 
         <section class="chat" aria-label="Чат">
           <div class="chat-head">
-            <div>
+            <button id="backToRoomsBtn" class="icon-btn chat-back" type="button" title="К комнатам" aria-label="К комнатам">‹</button>
+            <div class="chat-head-title">
               <p class="eyebrow">live channel</p>
               <h2 id="activeRoomTitle">Комната не выбрана</h2>
             </div>

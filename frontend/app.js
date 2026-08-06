@@ -42,6 +42,7 @@ const els = {
   roomIdInput: $("#roomIdInput"),
   roomsList: $("#roomsList"),
   activeRoomTitle: $("#activeRoomTitle"),
+  backToRoomsBtn: $("#backToRoomsBtn"),
   loadHistoryBtn: $("#loadHistoryBtn"),
   messages: $("#messages"),
   messageForm: $("#messageForm"),
@@ -60,6 +61,18 @@ function loadRooms() {
 
 function saveRooms() {
   localStorage.setItem(ROOMS_KEY, JSON.stringify(state.rooms));
+}
+
+function removeRoom(id) {
+  state.rooms = state.rooms.filter((item) => item.id !== String(id));
+  saveRooms();
+  renderRooms();
+}
+
+function setActiveView(view) {
+  const showRooms = view === "rooms";
+  document.body.classList.toggle("view-rooms", showRooms);
+  document.body.classList.toggle("view-chat", !showRooms);
 }
 
 function setStatus(label, value = "idle") {
@@ -108,7 +121,7 @@ function setToken(token) {
     els.authGate.hidden = false;
     els.appView.hidden = true;
     els.authUserLabel.textContent = "Вход не выполнен";
-    setTrace("Нужна авторизация", "Войди или зарегистрируйся, потом возвращайся к комнатам.", "warn");
+    setTrace("Готово", "Войди или зарегистрируйся, потом открывай комнаты.", "warn");
   }
   syncComposer();
 }
@@ -284,8 +297,8 @@ function closeSocket() {
 
 async function selectRoom(room) {
   if (!state.token) {
-    setTrace("Нужна авторизация", "Комната не подключается без bearer token. Сначала войди.", "error");
-    showToast("Сначала войди. Комнаты требуют авторизацию.");
+    setTrace("Нужна авторизация", "Сначала войди, потом открывай комнаты.", "error");
+    showToast("Сначала войди");
     setToken("");
     return;
   }
@@ -294,6 +307,7 @@ async function selectRoom(room) {
   setTrace("Проверяю комнату", `Загружаю историю и открываю websocket для ${room.id}.`, "warn");
   renderRooms();
   clearMessages();
+  setActiveView("chat");
   await loadHistory();
   connectSocket();
 }
@@ -320,8 +334,22 @@ async function loadHistory() {
     }
     messages.forEach((message) => renderMessage(message, "history"));
   } catch (error) {
+    if (error.status === 404 && state.activeRoom) {
+      dropActiveRoom(`${state.activeRoom.name} не найдена`);
+    }
     explainApiError(error, "Не удалось загрузить историю");
   }
+}
+
+function dropActiveRoom(reason) {
+  if (!state.activeRoom) return;
+  removeRoom(state.activeRoom.id);
+  state.activeRoom = null;
+  els.activeRoomTitle.textContent = "Комната не выбрана";
+  closeSocket();
+  clearMessages();
+  setTrace("Комната удалена", reason, "warn");
+  setActiveView("rooms");
 }
 
 function connectSocket() {
@@ -371,6 +399,10 @@ function connectSocket() {
     if (state.socket === socket) {
       setStatus(state.token ? "offline" : "signed out", state.token ? "error" : "idle");
       const reason = event.reason || (event.code === 1006 ? "Соединение закрыто без ответа. Часто это 401/403 или несуществующая комната." : `Код закрытия: ${event.code}`);
+      if ((event.code === 1006 || event.code === 1008) && state.activeRoom) {
+        dropActiveRoom(`Сокет для ${state.activeRoom.name} закрыт: ${reason}`);
+        return;
+      }
       setTrace("WebSocket закрыт", reason, "error");
       syncComposer();
     }
@@ -521,6 +553,7 @@ els.joinRoomForm.addEventListener("submit", async (event) => {
     els.roomIdInput.value = "";
     await selectRoom(room);
   } catch (error) {
+    if (error.status === 404) removeRoom(id);
     explainApiError(error, "Не удалось подключиться к комнате");
   }
 });
@@ -533,7 +566,10 @@ els.clearRoomsBtn.addEventListener("click", () => {
   closeSocket();
   els.activeRoomTitle.textContent = "Комната не выбрана";
   setTrace("Список очищен", "Локальные ID комнат удалены. Можно создать новую или вставить ID.", "ok");
+  setActiveView("rooms");
 });
+
+els.backToRoomsBtn.addEventListener("click", () => setActiveView("rooms"));
 
 els.loadHistoryBtn.addEventListener("click", loadHistory);
 els.refreshSessionBtn.addEventListener("click", () => refreshSession(true));
@@ -567,5 +603,6 @@ els.messageInput.addEventListener("keydown", (event) => {
 setMode("login");
 setToken(state.token);
 renderRooms();
+setActiveView("rooms");
 handleCallbackRoute();
 if (state.token) refreshSession(false);

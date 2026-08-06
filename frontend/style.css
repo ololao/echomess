@@ -141,7 +141,21 @@ button {
 .workspace {
   min-height: 0;
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 1fr;
+}
+
+.sidebar,
+.chat {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+body.view-rooms .chat {
+  display: none;
+}
+
+body.view-chat .sidebar {
+  display: none;
 }
 
 .auth-gate {
@@ -189,7 +203,6 @@ button {
 .sidebar {
   min-height: 0;
   display: grid;
-  border-right: 1px solid var(--line);
   background: rgba(8, 8, 8, 0.64);
 }
 
@@ -475,10 +488,20 @@ textarea:disabled {
 
 .chat-head {
   min-height: 88px;
+  align-items: center;
   justify-content: space-between;
   gap: 18px;
   padding: 22px 24px;
   border-bottom: 1px solid var(--line);
+}
+
+.chat-back {
+  display: inline-grid;
+}
+
+.chat-head-title {
+  flex: 1;
+  min-width: 0;
 }
 
 .messages {
@@ -610,17 +633,8 @@ textarea:disabled {
     border-bottom: 1px solid var(--line);
   }
 
-  .sidebar {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
   .panel {
     padding: 20px;
-  }
-
-  .chat {
-    min-height: 68vh;
   }
 
   .message {
