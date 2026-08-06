@@ -241,11 +241,45 @@ function renderRooms() {
     button.innerHTML = `
       <span class="room-name"></span>
       <span class="room-id"></span>
+      <span class="room-copy" role="button" tabindex="0" title="Скопировать ID" aria-label="Скопировать ID">⧉</span>
     `;
     button.querySelector(".room-name").textContent = room.name;
     button.querySelector(".room-id").textContent = room.id;
     button.addEventListener("click", () => selectRoom(room));
+    const copyBtn = button.querySelector(".room-copy");
+    copyBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      copyToClipboard(room.id);
+    });
+    copyBtn.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        event.stopPropagation();
+        copyToClipboard(room.id);
+      }
+    });
     els.roomsList.append(button);
+  }
+}
+
+async function copyToClipboard(value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    showToast("ID скопирован");
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.append(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      showToast("ID скопирован");
+    } catch {
+      showToast("Не удалось скопировать");
+    }
+    textarea.remove();
   }
 }
 
