@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator, Callable
+from uuid import uuid4
 
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,9 +12,11 @@ class RoomsRepository:
         self.db = db
 
     async def create_room(self, name: str):
-        query = insert(Rooms).values({"name": name}).returning(Rooms.id)
+        room_id = str(uuid4())
+        query = insert(Rooms).values({"id": room_id, "name": name})
         async for db in self.db():
-            room_id = await db.scalar(query)
+            await db.execute(query)
+            await db.commit()
             return room_id
 
     async def check_room_availability(self, id: str):

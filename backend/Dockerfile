@@ -18,9 +18,5 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /backend
 
-COPY .env .
-
 COPY --from=builder /backend/.venv /backend/.venv
-
 COPY backend/ .
-

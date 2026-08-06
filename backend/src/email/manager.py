@@ -1,7 +1,5 @@
-from fastapi import FastAPI
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import NameEmail
-from starlette.responses import JSONResponse
 
 from src.core import settings
 
@@ -21,7 +19,7 @@ conf = ConnectionConfig(
 
 class EmailSender:
     @staticmethod
-    async def send_url(email: str, url: str) -> JSONResponse:
+    async def send_url(email: str, url: str):
         html = f"""
     <!DOCTYPE html>
     <html lang="ru">
@@ -73,17 +71,16 @@ class EmailSender:
 
         message = MessageSchema(
             subject="ECHOMESS | Подтверждение аккаунта",
-            recipients=[NameEmail(name="ECHOMESS", email=email)],
+            recipients=[NameEmail(name="ECHOMESS CLIENT", email=email)],
             body=html,
             subtype=MessageType.html,
         )
 
         fm = FastMail(conf)
         await fm.send_message(message)
-        return JSONResponse(status_code=200, content={"message": "email has been sent"})
 
     @staticmethod
-    async def send_code(email: str, code: str) -> JSONResponse:
+    async def send_code(email: str, code: str):
         html = f"""
     <!DOCTYPE html>
     <html lang="ru">
@@ -134,13 +131,10 @@ class EmailSender:
 
         message = MessageSchema(
             subject="ECHOMESS | Код подтверждения",
-            recipients=[NameEmail(name="ECHOMESS", email=email)],
+            recipients=[NameEmail(name="ECHOMESS CLIENT", email=email)],
             body=html,
             subtype=MessageType.html,
         )
 
         fm = FastMail(conf)
         await fm.send_message(message)
-        return JSONResponse(
-            status_code=200, content={"message": "Verification code has been sent"}
-        )

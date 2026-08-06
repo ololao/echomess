@@ -13,12 +13,16 @@ class WebsocketRoomManager:
     async def connect(self, room_id, websocket):
         room = await self.room_service.check_room_availability(room_id)
         if room is None:
-            raise ValueError('Room does not exist')
+            raise ValueError("Room does not exist")
         if room_id not in worker_tasks:
             logr.info("Room_id not in worker_tasks, create worker task")
+            event = asyncio.Event()
             worker_tasks[room_id] = asyncio.create_task(
-                worker_task(self.redis, room_id)
+                worker_task(self.redis, room_id, event)
             )
+            await event.wait()
+        if not web_rooms[room_id]:
+            web_rooms[room_id] = []
         web_rooms[room_id].append(websocket)
 
     async def disconnect(self, room_id, websocket):

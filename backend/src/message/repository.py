@@ -1,7 +1,8 @@
 from collections.abc import AsyncGenerator, Callable
 from datetime import datetime
+from uuid import uuid4
 
-from sqlalchemy import insert, select
+from sqlalchemy import desc, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .enums import Direction
@@ -22,9 +23,13 @@ class MessageRepository:
         query = select(Message).where(Message.room_id == room_id)
         match direction:
             case Direction.after:
-                query = query.where(Message.created_at > cursor)
+                query = query.where(Message.created_at > cursor).order_by(
+                    Message.created_at
+                )
             case Direction.before:
-                query = query.where(Message.created_at < cursor)
+                query = query.where(Message.created_at < cursor).order_by(
+                    desc(Message.created_at)
+                )
         query = query.limit(limit)
         async for db in self.db():
             rez = await db.scalars(query)
@@ -33,6 +38,17 @@ class MessageRepository:
     async def save_message(self, room_id: str, data: str, user_id: str):
         query = (
             insert(Message)
-            .values({"data": data, "user_id": user_id, "room_id": room_id})
+            .values(
+                {
+                    "id": str(uuid4()),
+                    "data": data,
+                    "user_id": user_id,
+                    "room_id": room_id,
+                }
+            )
             .returning(Message)
         )
+        async for db in self.db():
+            rez = await db.scalar(query)
+            await db.commit()
+            return rez

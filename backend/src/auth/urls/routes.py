@@ -1,10 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Query, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 
 from src.security import JWTTokens
 
-from ..shemas import AccessToken
+from ..schemas import AccessToken
 from .dependency import UrlServiceDepends
 from .schemas import Registry
 
@@ -17,18 +18,24 @@ async def registry(
     url_service: UrlServiceDepends,
     background_tasks: BackgroundTasks,
 ):
-    return await url_service.registry(
-        email=registry_data.email,
-        name=registry_data.name,
-        password=registry_data.password,
-        background_tasks=background_tasks,
-    )
+    try:
+        return await url_service.registry(
+            email=registry_data.email,
+            name=registry_data.name,
+            password=registry_data.password,
+            background_tasks=background_tasks,
+        )
+    except ValueError as e:
+        raise HTTPException(400, detail=str(e))
 
 
 @url_router.get("/url-callback", status_code=200)
 async def url_callback(
     request: Request, url_service: UrlServiceDepends, token: Annotated[str, Query()]
 ):
-    tokens: JWTTokens = await url_service.url_callback(token=token)
-    request.session["refresh_key"] = tokens.refresh
-    return AccessToken(token=tokens.access)
+    try:
+        tokens: JWTTokens = await url_service.url_callback(token=token)
+        request.session["refresh_key"] = tokens.refresh
+        return AccessToken(token=tokens.access)
+    except ValueError as e:
+        raise HTTPException(400, detail=str(e))

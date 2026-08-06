@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     EMAIL_FROM: str
 
     COOKIE_KEY: str
+    COOKIE_HTTP_ONLY: bool = False  # False for local develop
 
     def get_redis_url(self):
         return f"redis://:{self.REDIS_PASSWORD}@redis:6379/0"
@@ -38,7 +39,7 @@ class Settings(BaseSettings):
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     def get_email_callback_url(self) -> str:
-        return f"{self.SCHEMA}://{self.DOMAIN}/api/v1/auth/url-callback"
+        return f"{self.SCHEMA}://{self.DOMAIN}/auth/url-callback"
 
     model_config = SettingsConfigDict(
         extra="ignore",

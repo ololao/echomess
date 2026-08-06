@@ -1,11 +1,14 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class MessangeCreate(BaseModel):
-    data: str = Field(max_length=1000)
+class MessageCreate(BaseModel):
+    data: str = Field(min_length=1, max_length=1000)
 
 
-class Messange(MessangeCreate):
-    created_at: str
+class MessageRead(MessageCreate):
+    created_at: datetime
     user_id: str
+    room_id: str
     model_config = ConfigDict(from_attributes=True)

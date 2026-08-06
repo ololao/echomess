@@ -2,7 +2,7 @@ from datetime import datetime
 
 from .enums import Direction
 from .repository import MessageRepository
-from .schemas import Messange
+from .schemas import MessageRead
 
 
 class MessageService:
@@ -24,4 +24,4 @@ class MessageService:
         rez = await self.repository.save_message(
             room_id=room_id, data=data, user_id=user_id
         )
-        return Messange.model_validate(rez)
+        return MessageRead.model_validate(rez)

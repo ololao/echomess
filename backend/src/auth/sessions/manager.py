@@ -1,7 +1,8 @@
 import json
-from uuid import uuid4
 
 from redis.asyncio import Redis
+
+from src.core import settings
 
 
 class SessionManager:
@@ -10,7 +11,11 @@ class SessionManager:
 
     async def create_session(self, session_id: str, user_id: str, token_id: str):
         data = json.dumps({"user_id": user_id, "token_id": token_id})
-        await self.redis.set(f"session:{user_id}:{session_id}", data)
+        await self.redis.set(
+            f"session:{user_id}:{session_id}",
+            data,
+            ex=settings.REFRESH_TOKEN_EXPIRE_DAY * 24 * 60 * 60,
+        )
         return session_id
 
     async def delete_session(self, user_id: str, session_id: str):

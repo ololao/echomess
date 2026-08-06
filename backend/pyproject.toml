@@ -5,9 +5,11 @@ description = "Simple Python messenger using Sebsocket's"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "asyncpg>=0.31.0",
     "email-validator>=2.3.0",
     "fastapi>=0.141.1",
     "fastapi-mail>=1.6.5",
+    "itsdangerous>=2.2.0",
     "loguru>=0.7.3",
     "pwdlib[argon,argon2,argonv2]>=0.3.0",
     "pydantic-settings>=2.14.2",

@@ -17,14 +17,21 @@ class RefreshToken:
     sub: str
     session_id: str
     token_id: str
-    exp: str
+    exp: int
+    token_type: str
+
+
+@dataclass(slots=True, kw_only=True, frozen=True)
+class AccessToken:
+    sub: str
+    exp: int
     token_type: str
 
 
 def create_tokens(access: dict, refresh: dict):
     access_data = access.copy()
     refresh_data = refresh.copy()
-    if not all([access_data.get("sub", False)]) and not all(
+    if not all([access_data.get("sub", False)]) or not all(
         [
             refresh_data.get("sub", False),
             refresh_data.get("session_id", False),
@@ -36,7 +43,7 @@ def create_tokens(access: dict, refresh: dict):
         minutes=settings.ACCESS_TOKEN_EXPIRE_MIN
     )
     refresh_token_exp = datetime.now(UTC) + timedelta(
-        minutes=settings.REFRESH_TOKEN_EXPIRE_DAY
+        days=settings.REFRESH_TOKEN_EXPIRE_DAY
     )
     access_data.update({"exp": access_token_exp, "token_type": "access"})
     refresh_data.update({"exp": refresh_token_exp, "token_type": "refresh"})
@@ -75,3 +82,22 @@ def decode_refresh_token(refresh_token: str):
         exp=exp,
         token_type=token_type,
     )
+
+
+def decode_access_token(access_token: str):
+    try:
+        token = jwt.decode(
+            access_token, key=settings.JWT_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
+    except jwt.ExpiredSignatureError:
+        raise ValueError("The time of the token is over")
+    except jwt.InvalidTokenError:
+        raise ValueError("Invalid token format")
+    sub = token.get("sub", "")
+    token_type = token.get("token_type", "")
+    exp = token.get("exp", "")
+    if not sub:
+        raise ValueError("Not enough fields")
+    if not token_type == "access":
+        raise ValueError("Some fields are incorrect")
+    return AccessToken(sub=sub, exp=exp, token_type=token_type)

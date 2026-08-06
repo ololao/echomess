@@ -8,6 +8,7 @@ from src.database import Base
 
 class Message(Base):
     __tablename__ = "messages"
+    id: Mapped[str] = mapped_column(primary_key=True)
     data: Mapped[str] = mapped_column(String(1000))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

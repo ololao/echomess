@@ -36,14 +36,16 @@ class UrlService:
         url_token = str(uuid4())
         url = generate_url(url_token)
         await self.redis.set(
-            f"url-callback:{create_fast_hash(url_token)}", user_id, ex=36000
+            f"url-callback:{create_fast_hash(url_token)}", user_id, ex=300
         )
         background_tasks.add_task(EmailSender.send_url, email=email, url=url)
 
     async def url_callback(self, token: str) -> JWTTokens:
-        user_id = await self.redis.get(f"url-callback:{create_fast_hash(token)}")
+        callback_key = f"url-callback:{create_fast_hash(token)}"
+        user_id = await self.redis.get(callback_key)
         if user_id is None:
             raise ValueError("Invalid token")
+        await self.redis.delete(callback_key)
         await self.user_service.change_status(user_id=user_id, status=UserStatus.ACTIVE)
         session_id = str(uuid4())
         refresh_token_id = str(uuid4())

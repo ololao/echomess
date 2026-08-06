@@ -3,17 +3,20 @@ from typing import Annotated
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 
-from src.security import decode_refresh_token
+from src.security import decode_access_token
 from src.users import User, UsersServiceDepends, UserStatus
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/registry")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/registry")
 
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], user_service: UsersServiceDepends
 ):
-    token_data = decode_refresh_token(token)
-    user: User | None = await user_service.get_user(user_id=token_data.sub)
+    try:
+        token_data = decode_access_token(token)
+        user: User | None = await user_service.get_user(user_id=token_data.sub)
+    except ValueError:
+        raise HTTPException(401)
     if user is None:
         raise HTTPException(
             status_code=401,

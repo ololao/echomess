@@ -29,23 +29,24 @@ class CodeService:
             [same_user.email == email, check_password(password, same_user.password)]
         ):
             raise ValueError("Incorrect login details")
-        code = str(randrange(000000, 1000000))
+        code = str(randrange(100000, 1000000))
         hash_code = create_password(code)
         attempt_id = str(uuid4())
         callback_data = json.dumps({"code": hash_code, "user_id": same_user.id})
         await self.redis.set(
-            f"code-callback:{attempt_id}", callback_data, ex=36000
+            f"code-callback:{attempt_id}", callback_data, ex=300
         )  # frontend save attempt to storage
         background_tasks.add_task(EmailSender.send_code, email=email, code=code)
         return attempt_id
 
     async def code_callback(self, attempt_id: str, code: str):
-        rawdata = await self.redis.get(f"url-callback:{attempt_id}")
+        rawdata = await self.redis.get(f"code-callback:{attempt_id}")
         if rawdata is None:
             raise ValueError("Incorrect login details")
         callback_data = json.loads(rawdata)
         if not check_password(code, callback_data["code"]):
             raise ValueError("Incorrect code, please try again")
+        await self.redis.delete(f"code-callback:{attempt_id}")
         user_id = callback_data["user_id"]
         session_id = str(uuid4())
         refresh_token_id = str(uuid4())
