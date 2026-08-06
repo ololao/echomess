@@ -18,12 +18,14 @@ def raise_not_authenticated(connection: HTTPConnection):
 
 
 def get_bearer_token(connection: HTTPConnection):
-    authorization = connection.headers.get("Authorization", None)
+    authorization: str | None = connection.headers.get("Authorization", None)
     if authorization is None:
         raise_not_authenticated(connection)
-    scheme, _, token = (authorization or "").partition(" ")
+        return
+    scheme, _, token = authorization.split()
     if scheme.lower() == "bearer" and token:
         return token
+    raise_not_authenticated(connection)
 
 
 async def get_current_user(
