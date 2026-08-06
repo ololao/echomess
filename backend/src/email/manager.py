@@ -1,5 +1,4 @@
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
-from pydantic import NameEmail
 
 from src.core import settings
 
@@ -14,7 +13,6 @@ conf = ConnectionConfig(
     MAIL_SSL_TLS=settings.EMAIL_SSL_TLS,
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True,
-    TIMEOUT=settings.EMAIL_TIMEOUT,
 )
 
 
@@ -23,7 +21,7 @@ class EmailSender:
     async def _send_email(email: str, subject: str, html: str) -> None:
         message = MessageSchema(
             subject=subject,
-            recipients=[NameEmail(name="ECHOMESS CLIENT", email=email)],
+            recipients=[email],
             body=html,
             subtype=MessageType.html,
         )
