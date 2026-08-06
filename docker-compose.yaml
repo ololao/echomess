@@ -97,6 +97,7 @@ volumes:
   redis-data:
     driver: local
   pg_data:
+  letsencrypt_data:
 
 networks:
   external:
