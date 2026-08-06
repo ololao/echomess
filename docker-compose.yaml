@@ -65,7 +65,7 @@ services:
     container_name: echomess-nginx
     restart: unless-stopped
     ports:
-      - "81:81"
+      - "80:81"
     depends_on:
       - chat
     networks:
