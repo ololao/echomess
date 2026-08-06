@@ -59,13 +59,17 @@ services:
       - internal
 
   nginx:
-    build:
-      context: .
-      dockerfile: nginx/Dockerfile
-    container_name: echomess-nginx
-    restart: unless-stopped
+    image: jonasal/nginx-certbot:latest
+    restart: always
+    environment:
+      - CERTBOT_EMAIL=${DOMAIN_EMAIL}
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/user_conf.d/app.conf:ro
+      - letsencrypt_data:/etc/letsencrypt
+      - ./frontend:/usr/share/nginx/html
     depends_on:
       - chat
     networks:
