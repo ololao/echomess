@@ -1,13 +1,14 @@
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends
+from fastapi.requests import HTTPConnection
 
 from .repository import MessageRepository
 from .services import MessageService
 
 
-def get_message_repository(request: Request):
-    return MessageRepository(db=request.app.state.db)
+def get_message_repository(connection: HTTPConnection):
+    return MessageRepository(db=connection.app.state.db)
 
 
 type MessageRepositoryDepends = Annotated[
