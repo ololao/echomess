@@ -1,40 +1,35 @@
-import httpx
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from pydantic import NameEmail
 
 from src.core import settings
 
-RESEND_EMAILS_URL = "https://api.resend.com/emails"
+conf = ConnectionConfig(
+    MAIL_USERNAME=settings.EMAIL_USERNAME,
+    MAIL_PASSWORD=settings.EMAIL_PASSWORD,
+    MAIL_FROM=settings.EMAIL_FROM,
+    MAIL_PORT=settings.EMAIL_PORT,
+    MAIL_SERVER=settings.EMAIL_SERVER,
+    MAIL_FROM_NAME="ECHOMESS",
+    MAIL_STARTTLS=settings.EMAIL_STARTTLS,
+    MAIL_SSL_TLS=settings.EMAIL_SSL_TLS,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True,
+    TIMEOUT=settings.EMAIL_TIMEOUT,
+)
 
 
 class EmailSender:
     @staticmethod
     async def _send_email(email: str, subject: str, html: str) -> None:
-        if (
-            settings.RESEND_API_KEY is None
-            or not settings.RESEND_API_KEY.get_secret_value()
-        ):
-            raise RuntimeError("RESEND_API_KEY is not configured")
+        message = MessageSchema(
+            subject=subject,
+            recipients=[NameEmail(name="ECHOMESS CLIENT", email=email)],
+            body=html,
+            subtype=MessageType.html,
+        )
 
-        async with httpx.AsyncClient(timeout=settings.EMAIL_TIMEOUT) as client:
-            response = await client.post(
-                RESEND_EMAILS_URL,
-                headers={
-                    "Authorization": (
-                        f"Bearer {settings.RESEND_API_KEY.get_secret_value()}"
-                    ),
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "from": settings.RESEND_FROM,
-                    "to": email,
-                    "subject": subject,
-                    "html": html,
-                },
-            )
-
-        if response.is_error:
-            raise RuntimeError(
-                f"Resend email send failed: {response.status_code} {response.text}"
-            )
+        fm = FastMail(conf)
+        await fm.send_message(message)
 
     @staticmethod
     async def send_url(email: str, url: str):

@@ -33,8 +33,6 @@ class Settings(BaseSettings):
     EMAIL_STARTTLS: bool = True
     EMAIL_SSL_TLS: bool = False
     EMAIL_TIMEOUT: int = 60
-    RESEND_API_KEY: SecretStr | None = None
-    RESEND_FROM: str = "ECHOMESS <onboarding@resend.dev>"
 
     COOKIE_KEY: str
     COOKIE_HTTP_ONLY: bool = False  # False for local develop
