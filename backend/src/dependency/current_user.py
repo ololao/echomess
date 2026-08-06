@@ -1,28 +1,43 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, WebSocketException, status
+from starlette.requests import HTTPConnection
 
 from src.security import decode_access_token
 from src.users import User, UsersServiceDepends, UserStatus
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/registry")
+
+def raise_not_authenticated(connection: HTTPConnection):
+    if connection.scope["type"] == "websocket":
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def get_bearer_token(connection: HTTPConnection):
+    authorization = connection.headers.get("Authorization", None)
+    if authorization is None:
+        raise_not_authenticated(connection)
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.lower() == "bearer" and token:
+        return token
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], user_service: UsersServiceDepends
+    connection: HTTPConnection,
+    token: Annotated[str, Depends(get_bearer_token)],
+    user_service: UsersServiceDepends,
 ):
     try:
         token_data = decode_access_token(token)
-        user: User | None = await user_service.get_user(user_id=token_data.sub)
     except ValueError:
         raise HTTPException(401)
+    user: User | None = await user_service.get_user(user_id=token_data.sub)
     if user is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise_not_authenticated(connection)
     return user
 
 
