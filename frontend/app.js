@@ -10,6 +10,7 @@ const state = {
   rooms: loadRooms(),
   activeRoom: null,
   socket: null,
+  authLoading: false,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -29,11 +30,13 @@ const els = {
   registerTab: $("#registerTab"),
   authTitle: $("#authTitle"),
   authHint: $("#authHint"),
+  authError: $("#authError"),
   authUserLabel: $("#authUserLabel"),
   roomTrace: $("#roomTrace"),
   nameField: $("#nameField"),
   authForm: $("#authForm"),
   codeForm: $("#codeForm"),
+  codeResendBtn: $("#codeResendBtn"),
   nameInput: $("#nameInput"),
   emailInput: $("#emailInput"),
   passwordInput: $("#passwordInput"),
@@ -46,12 +49,14 @@ const els = {
   roomIdInput: $("#roomIdInput"),
   roomsList: $("#roomsList"),
   activeRoomTitle: $("#activeRoomTitle"),
+  chatStatusLabel: $("#chatStatusLabel"),
   backToRoomsBtn: $("#backToRoomsBtn"),
   loadHistoryBtn: $("#loadHistoryBtn"),
   messages: $("#messages"),
   messageForm: $("#messageForm"),
   messageInput: $("#messageInput"),
   sendMessageBtn: $("#sendMessageBtn"),
+  composerHint: $("#composerHint"),
   toast: $("#toast"),
 };
 
@@ -114,20 +119,21 @@ function setToken(token) {
   state.userId = token ? decodeJwtSub(token) : "";
   if (token) {
     localStorage.setItem(TOKEN_KEY, token);
-    setStatus("ready", "online");
+    setStatus("online", "online");
     els.landing.hidden = true;
     els.authGate.hidden = true;
     els.appView.hidden = false;
-    els.authUserLabel.textContent = `Вход выполнен: ${shorten(state.userId)}`;
-    setTrace("Авторизация есть", "Теперь можно создавать комнаты и подключаться по ID.", "ok");
+    els.authUserLabel.textContent = `${shorten(state.userId)}`;
+    setTrace("Авторизация есть", "Создавай комнаты или подключайся по ID.", "ok");
   } else {
     localStorage.removeItem(TOKEN_KEY);
+    state.attemptId = "";
     setStatus("offline", "idle");
     els.landing.hidden = false;
     els.authGate.hidden = true;
     els.appView.hidden = true;
-    els.authUserLabel.textContent = "Вход не выполнен";
-    setTrace("Готово", "Войди или зарегистрируйся, потом открывай комнаты.", "warn");
+    els.authUserLabel.textContent = "Не авторизован";
+    setTrace("Нет авторизации", "Войди или зарегистрируйся, потом открывай комнаты.", "warn");
   }
   syncComposer();
 }
@@ -197,6 +203,7 @@ async function refreshSession(notify = true) {
 
 function setMode(mode) {
   state.mode = mode;
+  state.attemptId = "";
   const isLogin = mode === "login";
   els.loginTab.classList.toggle("is-active", isLogin);
   els.registerTab.classList.toggle("is-active", !isLogin);
@@ -207,9 +214,40 @@ function setMode(mode) {
   els.authSubmitBtn.textContent = isLogin ? "Запросить код" : "Создать аккаунт";
   els.authTitle.textContent = isLogin ? "Войти" : "Регистрация";
   els.authHint.textContent = isLogin
-    ? "Введи email и пароль. Затем подтверди одноразовый код из письма."
-    : "Создай аккаунт. Backend отправит ссылку подтверждения на email.";
+    ? "Введи email и пароль — получишь одноразовый код на почту."
+    : "Укажи имя, email и пароль. На почту придёт письмо с подтверждением.";
   els.codeForm.hidden = true;
+  clearAuthError();
+  setAuthLoading(false);
+}
+
+function clearAuthError() {
+  if (els.authError) {
+    els.authError.textContent = "";
+    els.authError.hidden = true;
+  }
+}
+
+function showAuthError(message) {
+  if (els.authError) {
+    els.authError.textContent = message;
+    els.authError.hidden = false;
+  } else {
+    showToast(message);
+  }
+}
+
+function setAuthLoading(loading) {
+  state.authLoading = loading;
+  els.authSubmitBtn.disabled = loading;
+  els.authSubmitBtn.dataset.loading = loading ? "true" : "false";
+  if (loading) {
+    els.authSubmitBtn.dataset.originalText = els.authSubmitBtn.textContent;
+    els.authSubmitBtn.textContent = "...";
+  } else if (els.authSubmitBtn.dataset.originalText) {
+    els.authSubmitBtn.textContent = els.authSubmitBtn.dataset.originalText;
+    delete els.authSubmitBtn.dataset.originalText;
+  }
 }
 
 function addRoom(room) {
@@ -227,38 +265,61 @@ function renderRooms() {
   els.roomsList.innerHTML = "";
   if (!state.rooms.length) {
     const empty = document.createElement("p");
-    empty.className = "room-id";
-    empty.textContent = "Локальный список пуст.";
+    empty.className = "rooms-empty";
+    empty.textContent = "Список пуст. Создай комнату или подключись по ID.";
     els.roomsList.append(empty);
     return;
   }
 
   for (const room of state.rooms) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "room-item";
-    button.classList.toggle("is-active", state.activeRoom?.id === room.id);
-    button.innerHTML = `
+    const isActive = state.activeRoom?.id === room.id;
+    const wrapper = document.createElement("div");
+    wrapper.className = `room-item${isActive ? " is-active" : ""}`;
+
+    const selectBtn = document.createElement("button");
+    selectBtn.type = "button";
+    selectBtn.className = "room-item-main";
+    selectBtn.innerHTML = `
       <span class="room-name"></span>
       <span class="room-id"></span>
-      <span class="room-copy" role="button" tabindex="0" title="Скопировать ID" aria-label="Скопировать ID">⧉</span>
     `;
-    button.querySelector(".room-name").textContent = room.name;
-    button.querySelector(".room-id").textContent = room.id;
-    button.addEventListener("click", () => selectRoom(room));
-    const copyBtn = button.querySelector(".room-copy");
+    selectBtn.querySelector(".room-name").textContent = room.name;
+    selectBtn.querySelector(".room-id").textContent = room.id;
+    selectBtn.addEventListener("click", () => selectRoom(room));
+
+    const actions = document.createElement("div");
+    actions.className = "room-item-actions";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "room-action-btn";
+    copyBtn.title = "Скопировать ID";
+    copyBtn.setAttribute("aria-label", "Скопировать ID");
+    copyBtn.textContent = "⧉";
     copyBtn.addEventListener("click", (event) => {
       event.stopPropagation();
       copyToClipboard(room.id);
     });
-    copyBtn.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        event.stopPropagation();
-        copyToClipboard(room.id);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "room-action-btn room-remove-btn";
+    removeBtn.title = "Убрать из списка";
+    removeBtn.setAttribute("aria-label", "Убрать комнату из списка");
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (state.activeRoom?.id === room.id) {
+        closeSocket();
+        state.activeRoom = null;
+        setActiveView("rooms");
       }
+      removeRoom(room.id);
     });
-    els.roomsList.append(button);
+
+    actions.append(copyBtn, removeBtn);
+    wrapper.append(selectBtn, actions);
+    els.roomsList.append(wrapper);
   }
 }
 
@@ -328,9 +389,44 @@ function shorten(value) {
 }
 
 function syncComposer() {
-  const ready = Boolean(state.token && state.activeRoom && state.socket?.readyState === WebSocket.OPEN);
+  const hasToken = Boolean(state.token);
+  const hasRoom = Boolean(state.activeRoom);
+  const isOpen = state.socket?.readyState === WebSocket.OPEN;
+  const ready = hasToken && hasRoom && isOpen;
+
   els.messageInput.disabled = !ready;
   els.sendMessageBtn.disabled = !ready;
+
+  if (els.composerHint) {
+    if (!hasToken) {
+      els.composerHint.textContent = "Войдите в аккаунт, чтобы писать сообщения";
+      els.composerHint.hidden = false;
+    } else if (!hasRoom) {
+      els.composerHint.textContent = "Выберите или создайте комнату";
+      els.composerHint.hidden = false;
+    } else if (!isOpen) {
+      els.composerHint.textContent = "Подключение...";
+      els.composerHint.hidden = false;
+    } else {
+      els.composerHint.hidden = true;
+    }
+  }
+
+  if (els.chatStatusLabel) {
+    if (!hasToken) {
+      els.chatStatusLabel.textContent = "не авторизован";
+      els.chatStatusLabel.dataset.state = "error";
+    } else if (!hasRoom) {
+      els.chatStatusLabel.textContent = "нет комнаты";
+      els.chatStatusLabel.dataset.state = "idle";
+    } else if (isOpen) {
+      els.chatStatusLabel.textContent = "подключено";
+      els.chatStatusLabel.dataset.state = "online";
+    } else {
+      els.chatStatusLabel.textContent = "подключение...";
+      els.chatStatusLabel.dataset.state = "wait";
+    }
+  }
 }
 
 function closeSocket() {
@@ -365,6 +461,7 @@ async function loadHistory() {
     showToast("Сначала войди и выбери комнату");
     return;
   }
+  els.messages.innerHTML = `<div class="empty-state"><p class="rooms-empty">Загрузка...</p></div>`;
   try {
     const cursor = encodeURIComponent(new Date().toISOString());
     const data = await api(`/msg/${state.activeRoom.id}?direction=before&limit=60&cursor=${cursor}`);
@@ -373,8 +470,8 @@ async function loadHistory() {
     if (!messages.length) {
       els.messages.innerHTML = `
         <div class="empty-state">
-          <p class="prompt">quiet room</p>
-          <p>История пуста. Первое сообщение задаст тон.</p>
+          <p class="prompt">тишина</p>
+          <p>Здесь пока нет сообщений. Напиши первым!</p>
         </div>
       `;
       return;
@@ -382,7 +479,8 @@ async function loadHistory() {
     messages.forEach((message) => renderMessage(message, "history"));
   } catch (error) {
     if (error.status === 404 && state.activeRoom) {
-      dropActiveRoom(`${state.activeRoom.name} не найдена`);
+      dropActiveRoom(`Комната «${state.activeRoom.name}» не найдена на сервере`);
+      return;
     }
     explainApiError(error, "Не удалось загрузить историю");
   }
@@ -412,12 +510,12 @@ function connectSocket() {
   const url = `${protocol}//${window.location.host}/wc/${state.activeRoom.id}?token=${token}`;
   const socket = new WebSocket(url);
   state.socket = socket;
-  setStatus("connecting", "wait");
+  setStatus("подключение", "wait");
   syncComposer();
 
   socket.addEventListener("open", () => {
-    setStatus("live", "online");
-    setTrace("WebSocket подключен", `Комната ${state.activeRoom.id} готова к сообщениям.`, "ok");
+    setStatus("онлайн", "online");
+    setTrace("Подключено", `Комната «${state.activeRoom?.name}» готова. Пиши сообщения!`, "ok");
     syncComposer();
   });
 
@@ -430,8 +528,8 @@ function connectSocket() {
     }
 
     if (message.type === "err") {
-      setTrace("Backend отклонил сообщение", message.data || "Проверь длину и формат сообщения.", "error");
-      showToast(message.data || "WebSocket error");
+      setTrace("Сообщение не отправлено", message.data || "Проверь длину и формат сообщения.", "error");
+      showToast(message.data || "Ошибка отправки");
       return;
     }
 
@@ -444,21 +542,23 @@ function connectSocket() {
 
   socket.addEventListener("close", (event) => {
     if (state.socket === socket) {
-      setStatus(state.token ? "offline" : "signed out", state.token ? "error" : "idle");
-      const reason = event.reason || (event.code === 1006 ? "Соединение закрыто без ответа. Часто это 401/403 или несуществующая комната." : `Код закрытия: ${event.code}`);
+      const isAuth = Boolean(state.token);
+      setStatus(isAuth ? "офлайн" : "не авторизован", isAuth ? "error" : "idle");
+      const reason = event.reason
+        || (event.code === 1006 ? "Соединение прервано. Возможно, комната не существует или истёк токен." : `Код: ${event.code}`);
       if ((event.code === 1006 || event.code === 1008) && state.activeRoom) {
-        dropActiveRoom(`Сокет для ${state.activeRoom.name} закрыт: ${reason}`);
+        dropActiveRoom(`Соединение с «${state.activeRoom.name}» прервано: ${reason}`);
         return;
       }
-      setTrace("WebSocket закрыт", reason, "error");
+      setTrace("Соединение закрыто", reason, "error");
       syncComposer();
     }
   });
 
   socket.addEventListener("error", () => {
-    setStatus("socket error", "error");
-    setTrace("WebSocket не подключился", "Проверь: ты вошел, token не истек, room id существует.", "error");
-    showToast("WebSocket не подключился: нужна авторизация или верный room id");
+    setStatus("ошибка", "error");
+    setTrace("Нет соединения", "Проверь: ты авторизован, токен актуален, комната существует.", "error");
+    showToast("WebSocket не подключился");
   });
 }
 
@@ -505,9 +605,11 @@ els.landingRegisterBtn.addEventListener("click", () => showAuthGate("register"))
 
 els.authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  clearAuthError();
   const email = els.emailInput.value.trim();
   const password = els.passwordInput.value;
 
+  setAuthLoading(true);
   try {
     if (state.mode === "register") {
       await api("/auth/registry", {
@@ -518,7 +620,9 @@ els.authForm.addEventListener("submit", async (event) => {
           password,
         }),
       }, false);
-      showToast("Письмо подтверждения отправлено. Открой ссылку из письма.");
+      setAuthLoading(false);
+      showToast("Письмо подтверждения отправлено — открой ссылку из письма");
+      els.authHint.textContent = `Письмо отправлено на ${email}. Перейди по ссылке из письма для активации аккаунта.`;
       return;
     }
 
@@ -528,19 +632,27 @@ els.authForm.addEventListener("submit", async (event) => {
     }, false);
     state.attemptId = data.attempt_id;
     els.codeForm.hidden = false;
+    els.codeInput.value = "";
     els.codeInput.focus();
     showToast("Код отправлен на почту");
   } catch (error) {
-    showToast(`Ошибка авторизации: ${error.message}`);
+    showAuthError(error.message || "Ошибка авторизации");
+  } finally {
+    setAuthLoading(false);
   }
 });
 
 els.codeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!state.attemptId) {
-    showToast("Сначала запроси код");
+    showAuthError("Сначала запроси код через форму выше");
     return;
   }
+
+  const codeSubmitBtn = els.codeForm.querySelector("button[type=submit]");
+  const originalText = codeSubmitBtn.textContent;
+  codeSubmitBtn.disabled = true;
+  codeSubmitBtn.textContent = "...";
 
   try {
     const data = await api("/auth/code-callback", {
@@ -552,19 +664,49 @@ els.codeForm.addEventListener("submit", async (event) => {
     }, false);
     setToken(data.token);
     els.codeForm.hidden = true;
-    showToast("Вход выполнен");
+    showToast("Вход выполнен!");
     if (state.activeRoom) connectSocket();
   } catch (error) {
-    showToast(`Код не принят: ${error.message}`);
+    showAuthError(error.message || "Код не принят");
+    els.codeInput.select();
+  } finally {
+    codeSubmitBtn.disabled = false;
+    codeSubmitBtn.textContent = originalText;
   }
 });
+
+if (els.codeResendBtn) {
+  els.codeResendBtn.addEventListener("click", async () => {
+    if (!els.emailInput.value || !els.passwordInput.value) {
+      showAuthError("Заполни email и пароль выше");
+      return;
+    }
+    els.codeResendBtn.disabled = true;
+    try {
+      const data = await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: els.emailInput.value.trim(),
+          password: els.passwordInput.value,
+        }),
+      }, false);
+      state.attemptId = data.attempt_id;
+      els.codeInput.value = "";
+      els.codeInput.focus();
+      showToast("Новый код отправлен");
+    } catch (error) {
+      showAuthError(error.message || "Не удалось выслать код");
+    } finally {
+      els.codeResendBtn.disabled = false;
+    }
+  });
+}
 
 els.createRoomForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!state.token) {
-    setTrace("Нужна авторизация", "Создание комнаты требует входа. Сначала авторизуйся.", "error");
-    showToast("Сначала войди. Создание комнаты требует авторизацию.");
-    setToken("");
+    setTrace("Нужна авторизация", "Создание комнаты требует входа.", "error");
+    showToast("Войди в аккаунт, чтобы создавать комнаты");
     return;
   }
   const name = els.roomNameInput.value.trim();
@@ -572,6 +714,11 @@ els.createRoomForm.addEventListener("submit", async (event) => {
     showToast("Название от 3 символов");
     return;
   }
+
+  const createBtn = els.createRoomForm.querySelector("button[type=submit]");
+  createBtn.disabled = true;
+  const origText = createBtn.textContent;
+  createBtn.textContent = "...";
 
   try {
     const id = await api("/room/", {
@@ -581,22 +728,29 @@ els.createRoomForm.addEventListener("submit", async (event) => {
     const room = addRoom({ id, name });
     els.roomNameInput.value = "";
     await selectRoom(room);
-    showToast("Комната создана");
+    showToast(`Комната «${name}» создана`);
   } catch (error) {
     explainApiError(error, "Комната не создана");
+  } finally {
+    createBtn.disabled = false;
+    createBtn.textContent = origText;
   }
 });
 
 els.joinRoomForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!state.token) {
-    setTrace("Нужна авторизация", "Подключение к комнате требует входа. Сначала авторизуйся.", "error");
-    showToast("Сначала войди. Подключение к комнате требует авторизацию.");
-    setToken("");
+    setTrace("Нужна авторизация", "Подключение к комнате требует входа.", "error");
+    showToast("Войди в аккаунт, чтобы подключаться к комнатам");
     return;
   }
   const id = els.roomIdInput.value.trim();
   if (!id) return;
+
+  const joinBtn = els.joinRoomForm.querySelector("button[type=submit]");
+  joinBtn.disabled = true;
+  const origJoinText = joinBtn.textContent;
+  joinBtn.textContent = "...";
 
   try {
     const data = await api(`/room/${encodeURIComponent(id)}`, { method: "GET" }, false);
@@ -604,8 +758,14 @@ els.joinRoomForm.addEventListener("submit", async (event) => {
     els.roomIdInput.value = "";
     await selectRoom(room);
   } catch (error) {
-    if (error.status === 404) removeRoom(id);
-    explainApiError(error, "Не удалось подключиться к комнате");
+    if (error.status === 404) {
+      showToast("Комната не найдена — проверь ID");
+    } else {
+      explainApiError(error, "Не удалось подключиться к комнате");
+    }
+  } finally {
+    joinBtn.disabled = false;
+    joinBtn.textContent = origJoinText;
   }
 });
 

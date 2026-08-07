@@ -49,13 +49,15 @@
             <div class="section-head">
               <p class="eyebrow">account</p>
               <h2 id="authTitle">Войти</h2>
-              <p id="authHint" class="hint">Введи email и пароль. Затем подтверди одноразовый код из письма.</p>
+              <p id="authHint" class="hint">Введи email и пароль — получишь одноразовый код на почту.</p>
             </div>
 
             <div class="tabs" role="tablist" aria-label="Режим авторизации">
               <button id="loginTab" class="tab is-active" type="button" role="tab" aria-selected="true">Войти</button>
               <button id="registerTab" class="tab" type="button" role="tab" aria-selected="false">Регистрация</button>
             </div>
+
+            <div id="authError" class="auth-error" hidden></div>
 
             <form id="authForm" class="stack">
               <label id="nameField" class="field" hidden>
@@ -76,9 +78,12 @@
             <form id="codeForm" class="stack code-form" hidden>
               <label class="field">
                 <span>Код из письма</span>
-                <input id="codeInput" name="code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" />
+                <input id="codeInput" name="code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
               </label>
-              <button class="primary-btn" type="submit">Подтвердить</button>
+              <div class="code-form-actions">
+                <button class="primary-btn" type="submit">Подтвердить</button>
+                <button id="codeResendBtn" class="secondary-btn" type="button">Выслать снова</button>
+              </div>
             </form>
           </section>
         </section>
@@ -93,7 +98,7 @@
                 <h2>Комнаты</h2>
                 <p id="authUserLabel" class="hint">Авторизация проверяется...</p>
               </div>
-              <button id="clearRoomsBtn" class="icon-btn" type="button" title="Очистить локальный список" aria-label="Очистить локальный список">⌫</button>
+              <button id="clearRoomsBtn" class="icon-btn" type="button" title="Очистить список" aria-label="Очистить список комнат">⌫</button>
             </div>
 
             <div id="roomTrace" class="trace" data-state="ok">
@@ -111,8 +116,8 @@
 
             <form id="joinRoomForm" class="stack compact">
               <label class="field">
-                <span>ID комнаты</span>
-                <input id="roomIdInput" type="text" placeholder="uuid" />
+                <span>Войти по ID</span>
+                <input id="roomIdInput" type="text" placeholder="вставь UUID комнаты" />
               </label>
               <button class="secondary-btn" type="submit">Подключиться</button>
             </form>
@@ -128,19 +133,25 @@
               <p class="eyebrow">live channel</p>
               <h2 id="activeRoomTitle">Комната не выбрана</h2>
             </div>
-            <button id="loadHistoryBtn" class="secondary-btn slim" type="button">История</button>
+            <div class="chat-head-right">
+              <span id="chatStatusLabel" class="status-dot" data-state="idle">нет комнаты</span>
+              <button id="loadHistoryBtn" class="secondary-btn slim" type="button">Обновить</button>
+            </div>
           </div>
 
           <div id="messages" class="messages" aria-live="polite">
             <div class="empty-state">
-              <p class="prompt">Hello, World!</p>
-              <p>Войди, создай комнату или подключись по ID, затем отправляй сообщения в реальном времени.</p>
+              <p class="prompt">echomess</p>
+              <p>Войди, выбери или создай комнату — и начни общаться в реальном времени.</p>
             </div>
           </div>
 
           <form id="messageForm" class="composer">
-            <label class="sr-only" for="messageInput">Сообщение</label>
-            <textarea id="messageInput" rows="1" maxlength="1000" placeholder="Написать сообщение..." disabled></textarea>
+            <div class="composer-input-wrap">
+              <label class="sr-only" for="messageInput">Сообщение</label>
+              <textarea id="messageInput" rows="1" maxlength="1000" placeholder="Написать сообщение... (Enter — отправить, Shift+Enter — перенос)" disabled></textarea>
+              <p id="composerHint" class="composer-hint" hidden>Выберите комнату, чтобы писать</p>
+            </div>
             <button id="sendMessageBtn" class="send-btn" type="submit" disabled title="Отправить" aria-label="Отправить">↗</button>
           </form>
         </section>

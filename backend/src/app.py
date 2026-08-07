@@ -9,7 +9,7 @@ from src.rooms import room_router
 from .lifespan import lifespan
 from .websockets import websocket_router
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.COOKIE_KEY,
