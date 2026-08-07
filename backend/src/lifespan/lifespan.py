@@ -6,12 +6,6 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.core import settings
-from src.database import Base
-
-# import table's to create
-from src.message import Message
-from src.rooms import Rooms
-from src.users import User
 
 
 @asynccontextmanager
@@ -22,9 +16,6 @@ async def lifespan(app: FastAPI):
         pool_size=10,
         max_overflow=20,
     )
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
     SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
     async def get_db() -> AsyncGenerator[AsyncSession, None]:

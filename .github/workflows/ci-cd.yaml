@@ -20,7 +20,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test
-
+    if: github.event_name == 'push' && github.ref_name == 'main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,10 +33,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             bash -c '
+              set -e
               cd ~/echomess/
+              BRANCH="${{ github.ref_name }}"
               docker compose down
               git fetch --all
-              git checkout main
-              git pull origin main
+              git switch "$BRANCH"
+              git pull origin "$BRANCH"
               docker compose up --build -d
             '
