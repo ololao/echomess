@@ -11,4 +11,5 @@ class MessageRead(MessageCreate):
     created_at: datetime
     user_id: str
     room_id: str
+    user_name: str
     model_config = ConfigDict(from_attributes=True)

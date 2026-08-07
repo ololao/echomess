@@ -116,11 +116,12 @@
 
             <form id="joinRoomForm" class="stack compact">
               <label class="field">
-                <span>Войти по ID</span>
-                <input id="roomIdInput" type="text" placeholder="вставь UUID комнаты" />
+                <span>Найти комнату</span>
+                <input id="roomSearchInput" type="text" maxlength="30" placeholder="название комнаты..." autocomplete="off" />
               </label>
-              <button class="secondary-btn" type="submit">Подключиться</button>
+              <button class="secondary-btn" type="submit">Найти</button>
             </form>
+            <div id="searchResults" class="search-results" hidden></div>
 
             <div id="roomsList" class="rooms-list" aria-live="polite"></div>
           </section>

@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from sqlalchemy import desc, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from .enums import Direction
 from .models import Message
@@ -20,7 +21,11 @@ class MessageRepository:
         limit: int,
         cursor: datetime,
     ):
-        query = select(Message).where(Message.room_id == room_id)
+        query = (
+            select(Message)
+            .options(joinedload(Message.user))
+            .where(Message.room_id == room_id)
+        )
         match direction:
             case Direction.after:
                 query = query.where(Message.created_at > cursor).order_by(

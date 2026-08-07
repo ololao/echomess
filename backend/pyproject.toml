@@ -21,16 +21,3 @@ dependencies = [
     "uvicorn[standard]>=0.52.1",
     "uvloop>=0.22.1",
 ]
-
-[tool.ruff.lint]
-# only runtime-errors
-select = [
-    "E9",   # (SyntaxError, IndentationError)
-    "PLE",  # Pylint Errors
-    "F821",
-]
-
-ignore = [
-    "F401", # (imported but unused)
-    "F841", # (assigned but never used)
-]

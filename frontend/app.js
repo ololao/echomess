@@ -46,10 +46,11 @@ const els = {
   joinRoomForm: $("#joinRoomForm"),
   clearRoomsBtn: $("#clearRoomsBtn"),
   roomNameInput: $("#roomNameInput"),
-  roomIdInput: $("#roomIdInput"),
+  roomSearchInput: $("#roomSearchInput"),
+  searchResults: $("#searchResults"),
   roomsList: $("#roomsList"),
   activeRoomTitle: $("#activeRoomTitle"),
-  chatStatusLabel: $("#chatStatusLabel"),
+
   backToRoomsBtn: $("#backToRoomsBtn"),
   loadHistoryBtn: $("#loadHistoryBtn"),
   messages: $("#messages"),
@@ -412,21 +413,6 @@ function syncComposer() {
     }
   }
 
-  if (els.chatStatusLabel) {
-    if (!hasToken) {
-      els.chatStatusLabel.textContent = "не авторизован";
-      els.chatStatusLabel.dataset.state = "error";
-    } else if (!hasRoom) {
-      els.chatStatusLabel.textContent = "нет комнаты";
-      els.chatStatusLabel.dataset.state = "idle";
-    } else if (isOpen) {
-      els.chatStatusLabel.textContent = "подключено";
-      els.chatStatusLabel.dataset.state = "online";
-    } else {
-      els.chatStatusLabel.textContent = "подключение...";
-      els.chatStatusLabel.dataset.state = "wait";
-    }
-  }
 }
 
 function closeSocket() {
@@ -737,6 +723,35 @@ els.createRoomForm.addEventListener("submit", async (event) => {
   }
 });
 
+function renderSearchResults(rooms) {
+  const container = els.searchResults;
+  container.innerHTML = "";
+  if (!rooms.length) {
+    container.hidden = false;
+    const empty = document.createElement("p");
+    empty.className = "rooms-empty";
+    empty.textContent = "Ничего не найдено";
+    container.append(empty);
+    return;
+  }
+  container.hidden = false;
+  for (const room of rooms) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "search-result-item";
+    btn.innerHTML = `<span class="room-name"></span><span class="room-id"></span>`;
+    btn.querySelector(".room-name").textContent = room.name;
+    btn.querySelector(".room-id").textContent = room.id;
+    btn.addEventListener("click", async () => {
+      container.hidden = true;
+      els.roomSearchInput.value = "";
+      const r = addRoom({ id: room.id, name: room.name });
+      await selectRoom(r);
+    });
+    container.append(btn);
+  }
+}
+
 els.joinRoomForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!state.token) {
@@ -744,8 +759,8 @@ els.joinRoomForm.addEventListener("submit", async (event) => {
     showToast("Войди в аккаунт, чтобы подключаться к комнатам");
     return;
   }
-  const id = els.roomIdInput.value.trim();
-  if (!id) return;
+  const query = els.roomSearchInput.value.trim();
+  if (!query) return;
 
   const joinBtn = els.joinRoomForm.querySelector("button[type=submit]");
   joinBtn.disabled = true;
@@ -753,19 +768,23 @@ els.joinRoomForm.addEventListener("submit", async (event) => {
   joinBtn.textContent = "...";
 
   try {
-    const data = await api(`/room/${encodeURIComponent(id)}`, { method: "GET" }, false);
-    const room = addRoom({ id: data?.id || id, name: data?.name || `room:${id.slice(0, 8)}` });
-    els.roomIdInput.value = "";
-    await selectRoom(room);
+    const results = await api(
+      `/room/?search=${encodeURIComponent(query)}&page_number=1&page_limit=10`,
+      { method: "GET" },
+    );
+    renderSearchResults(Array.isArray(results) ? results : []);
   } catch (error) {
-    if (error.status === 404) {
-      showToast("Комната не найдена — проверь ID");
-    } else {
-      explainApiError(error, "Не удалось подключиться к комнате");
-    }
+    explainApiError(error, "Поиск не удался");
   } finally {
     joinBtn.disabled = false;
     joinBtn.textContent = origJoinText;
+  }
+});
+
+els.roomSearchInput.addEventListener("input", () => {
+  if (!els.roomSearchInput.value.trim()) {
+    els.searchResults.hidden = true;
+    els.searchResults.innerHTML = "";
   }
 });
 

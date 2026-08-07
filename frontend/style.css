@@ -482,6 +482,49 @@ textarea:disabled {
   margin-bottom: 4px;
 }
 
+.search-results {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--line-strong);
+  background: #0d0d0d;
+  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.search-result-item {
+  width: 100%;
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.search-result-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: none;
+  border-color: transparent;
+}
+
+.search-result-item .room-name {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.search-result-item .room-id {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .rooms-list {
   min-height: 120px;
   overflow: auto;
