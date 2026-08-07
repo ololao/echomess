@@ -16,7 +16,21 @@ dependencies = [
     "pyjwt>=2.13.0",
     "redis>=8.1.0",
     "resend>=2.35.0",
+    "ruff>=0.16.1",
     "sqlalchemy>=2.0.51",
     "uvicorn[standard]>=0.52.1",
     "uvloop>=0.22.1",
+]
+
+[tool.ruff.lint]
+# only runtime-errors
+select = [
+    "E9",   # (SyntaxError, IndentationError)
+    "PLE",  # Pylint Errors
+    "F821",
+]
+
+ignore = [
+    "F401", # (imported but unused)
+    "F841", # (assigned but never used)
 ]
