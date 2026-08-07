@@ -105,14 +105,27 @@ function showToast(message) {
   }, 3600);
 }
 
-function decodeJwtSub(token) {
+function decodeJwtPayload(token) {
   try {
     const payload = token.split(".")[1];
-    const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    return json.sub || "";
+    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
   } catch {
-    return "";
+    return null;
   }
+}
+
+function decodeJwtSub(token) {
+  const payload = decodeJwtPayload(token);
+  return payload ? payload.sub || "" : "";
+}
+
+function isAccessTokenValid(token = state.token) {
+  if (!token) return false;
+  const payload = decodeJwtPayload(token);
+  if (!payload) return false;
+  const exp = Number(payload.exp);
+  if (!exp) return true;
+  return exp * 1000 > Date.now() + 5000;
 }
 
 function setToken(token) {
@@ -124,8 +137,8 @@ function setToken(token) {
     els.landing.hidden = true;
     els.authGate.hidden = true;
     els.appView.hidden = false;
-    els.authUserLabel.textContent = `${shorten(state.userId)}`;
-    setTrace("Авторизация есть", "Создавай комнаты или подключайся по ID.", "ok");
+    els.authUserLabel.textContent = "в сети";
+    setTrace("Авторизация есть", "Создавай комнаты или ищи их по названию.", "ok");
   } else {
     localStorage.removeItem(TOKEN_KEY);
     state.attemptId = "";
@@ -192,11 +205,15 @@ async function refreshSession(notify = true) {
     setToken(data.token);
     if (notify) showToast("Сессия обновлена");
     return true;
-  } catch {
-    setToken("");
-    if (notify) {
-      showToast("Сессия не обновилась. Нужно войти заново.");
-      setTrace("Сессия истекла", "Backend отклонил refresh. Повтори вход через email и код.", "error");
+  } catch (error) {
+    if (!isAccessTokenValid()) {
+      setToken("");
+      if (notify) {
+        showToast("Сессия истекла. Нужно войти заново.");
+        setTrace("Сессия истекла", "Backend отклонил refresh, access-токен тоже не годен. Повтори вход.", "error");
+      }
+    } else if (notify) {
+      showToast("Не удалось обновить сессию — работаю с текущим токеном");
     }
     return false;
   }
@@ -252,9 +269,11 @@ function setAuthLoading(loading) {
 }
 
 function addRoom(room) {
+  const id = String(room.id || room);
+  const name = room.name && String(room.name).trim();
   const normalized = {
-    id: String(room.id || room),
-    name: room.name || `room:${String(room.id || room).slice(0, 8)}`,
+    id,
+    name: name || "Без названия",
   };
   state.rooms = [normalized, ...state.rooms.filter((item) => item.id !== normalized.id)].slice(0, 16);
   saveRooms();
@@ -267,7 +286,7 @@ function renderRooms() {
   if (!state.rooms.length) {
     const empty = document.createElement("p");
     empty.className = "rooms-empty";
-    empty.textContent = "Список пуст. Создай комнату или подключись по ID.";
+    empty.textContent = "Список пуст. Создай комнату или найди по названию.";
     els.roomsList.append(empty);
     return;
   }
@@ -280,27 +299,14 @@ function renderRooms() {
     const selectBtn = document.createElement("button");
     selectBtn.type = "button";
     selectBtn.className = "room-item-main";
-    selectBtn.innerHTML = `
-      <span class="room-name"></span>
-      <span class="room-id"></span>
-    `;
-    selectBtn.querySelector(".room-name").textContent = room.name;
-    selectBtn.querySelector(".room-id").textContent = room.id;
+    const nameEl = document.createElement("span");
+    nameEl.className = "room-name";
+    nameEl.textContent = room.name;
+    selectBtn.append(nameEl);
     selectBtn.addEventListener("click", () => selectRoom(room));
 
     const actions = document.createElement("div");
     actions.className = "room-item-actions";
-
-    const copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.className = "room-action-btn";
-    copyBtn.title = "Скопировать ID";
-    copyBtn.setAttribute("aria-label", "Скопировать ID");
-    copyBtn.textContent = "⧉";
-    copyBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      copyToClipboard(room.id);
-    });
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
@@ -318,30 +324,9 @@ function renderRooms() {
       removeRoom(room.id);
     });
 
-    actions.append(copyBtn, removeBtn);
+    actions.append(removeBtn);
     wrapper.append(selectBtn, actions);
     els.roomsList.append(wrapper);
-  }
-}
-
-async function copyToClipboard(value) {
-  try {
-    await navigator.clipboard.writeText(value);
-    showToast("ID скопирован");
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = value;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.append(textarea);
-    textarea.select();
-    try {
-      document.execCommand("copy");
-      showToast("ID скопирован");
-    } catch {
-      showToast("Не удалось скопировать");
-    }
-    textarea.remove();
   }
 }
 
@@ -361,17 +346,22 @@ function renderMessage(message, source = "history") {
   const mine = message.user_id ? message.user_id === state.userId : source === "local";
   item.className = `message${mine ? " is-mine" : ""}`;
 
+  if (!mine && message.user_name) {
+    const author = document.createElement("div");
+    author.className = "message-author";
+    author.textContent = message.user_name;
+    item.append(author);
+  }
+
   const body = document.createElement("div");
   body.className = "message-body";
   body.textContent = message.data || "";
 
   const meta = document.createElement("div");
   meta.className = "message-meta";
-  const author = document.createElement("span");
-  author.textContent = mine ? "you" : shorten(message.user_id || "live");
   const time = document.createElement("time");
   time.textContent = formatTime(message.created_at || new Date().toISOString());
-  meta.append(author, time);
+  meta.append(time);
 
   item.append(body, meta);
   els.messages.append(item);
@@ -433,7 +423,7 @@ async function selectRoom(room) {
   }
   state.activeRoom = room;
   els.activeRoomTitle.textContent = room.name;
-  setTrace("Проверяю комнату", `Загружаю историю и открываю websocket для ${room.id}.`, "warn");
+  setTrace("Подключаюсь", `Загружаю историю комнаты «${room.name}»...`, "warn");
   renderRooms();
   clearMessages();
   setActiveView("chat");
@@ -739,9 +729,10 @@ function renderSearchResults(rooms) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "search-result-item";
-    btn.innerHTML = `<span class="room-name"></span><span class="room-id"></span>`;
-    btn.querySelector(".room-name").textContent = room.name;
-    btn.querySelector(".room-id").textContent = room.id;
+    const nameEl = document.createElement("span");
+    nameEl.className = "room-name";
+    nameEl.textContent = room.name;
+    btn.append(nameEl);
     btn.addEventListener("click", async () => {
       container.hidden = true;
       els.roomSearchInput.value = "";
@@ -795,7 +786,7 @@ els.clearRoomsBtn.addEventListener("click", () => {
   renderRooms();
   closeSocket();
   els.activeRoomTitle.textContent = "Комната не выбрана";
-  setTrace("Список очищен", "Локальные ID комнат удалены. Можно создать новую или вставить ID.", "ok");
+  setTrace("Список очищен", "Создай новую комнату или найди существующую по названию.", "ok");
   setActiveView("rooms");
 });
 
