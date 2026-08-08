@@ -1,164 +1,82 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ECHOMESS</title>
-    <link rel="stylesheet" href="/style.css" />
-  </head>
-  <body>
-    <main class="shell">
-      <header class="topbar" aria-label="Главная панель">
-        <a class="brand" href="/" aria-label="ECHOMESS">
-          <span class="brand-mark">E</span>
-          <span>echomess</span>
-        </a>
-        <div class="topbar-actions">
-          <span id="connectionStatus" class="status-dot" data-state="idle">offline</span>
-          <button id="refreshSessionBtn" class="icon-btn" type="button" title="Обновить сессию" aria-label="Обновить сессию">↻</button>
-          <button id="logoutBtn" class="icon-btn" type="button" title="Выйти" aria-label="Выйти">×</button>
-        </div>
-      </header>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EchoMess</title>
+  <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
 
-      <section id="callbackNotice" class="notice" hidden>
-        <span>Подтверждаю аккаунт...</span>
-      </section>
+  <div id="toast"></div>
 
-      <section id="landing" class="landing">
-        <div class="landing-inner">
-          <p class="eyebrow">welcome</p>
-          <h1>echomess</h1>
-          <p class="lead">Создавай комнаты, находи их по названию и общайся в реальном времени.</p>
-          <div class="landing-actions">
-            <button id="enterBtn" class="primary-btn" type="button">Начать</button>
-            <button id="landingLoginBtn" class="secondary-btn" type="button">Войти</button>
-            <button id="landingRegisterBtn" class="secondary-btn" type="button">Регистрация</button>
-          </div>
-        </div>
-      </section>
+  <!-- ГЛАВНОЕ ПРИЛОЖЕНИЕ -->
+  <div id="app" class="hidden"></div>
 
-      <section id="authGate" class="auth-gate" hidden>
-        <section class="auth-card">
-          <div class="auth-copy">
-            <p class="eyebrow">welcome</p>
-            <h1>Зарегистрируйся и пиши.</h1>
-            <p class="lead">Создавай комнаты, находи их по названию и общайся в реальном времени.</p>
-          </div>
+  <!-- ЭКРАН ПОДТВЕРЖДЕНИЯ ПО ПОЧТЕ (по ссылке из письма) -->
+  <div id="email-callback" class="screen hidden">
+    <div class="card">
+      <h1>EchoMess</h1>
+      <p id="callback-status">Подтверждаем вашу почту...</p>
+    </div>
+  </div>
 
-          <section class="panel auth-panel">
-            <div class="section-head">
-              <p class="eyebrow">account</p>
-              <h2 id="authTitle">Войти</h2>
-              <p id="authHint" class="hint">Введи email и пароль — получишь одноразовый код на почту.</p>
-            </div>
+  <!-- ЭКРАН АВТОРИЗАЦИИ -->
+  <div id="auth" class="screen">
+    <div class="card">
+      <h1>EchoMess</h1>
+      <p class="muted">Чат без лишних сложностей</p>
 
-            <div class="tabs" role="tablist" aria-label="Режим авторизации">
-              <button id="loginTab" class="tab is-active" type="button" role="tab" aria-selected="true">Войти</button>
-              <button id="registerTab" class="tab" type="button" role="tab" aria-selected="false">Регистрация</button>
-            </div>
+      <div class="tabs">
+        <button id="tab-login" class="tab active" type="button">Вход</button>
+        <button id="tab-register" class="tab" type="button">Регистрация</button>
+      </div>
 
-            <div id="authError" class="auth-error" hidden></div>
+      <!-- Вход -->
+      <form id="login-form" class="form">
+        <label>
+          <span>Email</span>
+          <input type="email" id="login-email" placeholder="you@example.com" required autocomplete="email">
+        </label>
+        <label>
+          <span>Пароль</span>
+          <input type="password" id="login-password" placeholder="не меньше 10 символов" required autocomplete="current-password">
+        </label>
+        <button type="submit" class="btn primary">Войти</button>
+        <p class="hint">На почту придёт код подтверждения.</p>
+      </form>
 
-            <form id="authForm" class="stack">
-              <label id="nameField" class="field" hidden>
-                <span>Имя</span>
-                <input id="nameInput" name="name" type="text" maxlength="10" autocomplete="nickname" placeholder="alex" />
-              </label>
-              <label class="field">
-                <span>Email</span>
-                <input id="emailInput" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
-              </label>
-              <label class="field">
-                <span>Пароль</span>
-                <input id="passwordInput" name="password" type="password" minlength="10" maxlength="25" autocomplete="current-password" placeholder="10-25 символов" required />
-              </label>
-              <button id="authSubmitBtn" class="primary-btn" type="submit">Запросить код</button>
-            </form>
+      <!-- Ввод кода -->
+      <form id="code-form" class="form hidden">
+        <p class="hint">Мы отправили код на вашу почту. Введите его ниже.</p>
+        <label>
+          <span>Код подтверждения</span>
+          <input type="text" id="login-code" inputmode="numeric" placeholder="123456" required autocomplete="one-time-code">
+        </label>
+        <button type="submit" class="btn primary">Подтвердить</button>
+        <button type="button" id="code-cancel" class="btn ghost">Назад</button>
+      </form>
 
-            <form id="codeForm" class="stack code-form" hidden>
-              <label class="field">
-                <span>Код из письма</span>
-                <input id="codeInput" name="code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
-              </label>
-              <div class="code-form-actions">
-                <button class="primary-btn" type="submit">Подтвердить</button>
-                <button id="codeResendBtn" class="secondary-btn" type="button">Выслать снова</button>
-              </div>
-            </form>
-          </section>
-        </section>
-      </section>
+      <!-- Регистрация -->
+      <form id="register-form" class="form hidden">
+        <label>
+          <span>Имя (до 10 символов)</span>
+          <input type="text" id="register-name" maxlength="10" placeholder="как вас зовут" required>
+        </label>
+        <label>
+          <span>Email</span>
+          <input type="email" id="register-email" placeholder="you@example.com" required autocomplete="email">
+        </label>
+        <label>
+          <span>Пароль (10–25 символов)</span>
+          <input type="password" id="register-password" placeholder="не меньше 10 символов" required autocomplete="new-password">
+        </label>
+        <button type="submit" class="btn primary">Зарегистрироваться</button>
+        <p class="hint">На почту придёт ссылка для подтверждения аккаунта.</p>
+      </form>
+    </div>
+  </div>
 
-      <section id="appView" class="workspace" hidden>
-        <aside class="sidebar" aria-label="Комнаты">
-          <section class="panel room-panel">
-            <div class="section-head row-head">
-              <div>
-                <p class="eyebrow">rooms</p>
-                <h2>Комнаты</h2>
-                <p id="authUserLabel" class="hint">Авторизация проверяется...</p>
-              </div>
-              <button id="clearRoomsBtn" class="icon-btn" type="button" title="Очистить список" aria-label="Очистить список комнат">⌫</button>
-            </div>
-
-            <div id="roomTrace" class="trace" data-state="ok">
-              <strong>Готово</strong>
-              <span>Выбери комнату или создай новую.</span>
-            </div>
-
-            <form id="createRoomForm" class="stack">
-              <label class="field">
-                <span>Новая комната</span>
-                <input id="roomNameInput" type="text" minlength="3" maxlength="30" placeholder="general" />
-              </label>
-              <button class="secondary-btn" type="submit">Создать</button>
-            </form>
-
-            <form id="joinRoomForm" class="stack compact">
-              <label class="field">
-                <span>Найти комнату</span>
-                <input id="roomSearchInput" type="text" maxlength="30" placeholder="название комнаты..." autocomplete="off" />
-              </label>
-              <button class="secondary-btn" type="submit">Найти</button>
-            </form>
-            <div id="searchResults" class="search-results" hidden></div>
-
-            <div id="roomsList" class="rooms-list" aria-live="polite"></div>
-          </section>
-        </aside>
-
-        <section class="chat" aria-label="Чат">
-          <div class="chat-head">
-            <button id="backToRoomsBtn" class="icon-btn chat-back" type="button" title="К комнатам" aria-label="К комнатам">‹</button>
-            <div class="chat-head-title">
-              <p class="eyebrow">live channel</p>
-              <h2 id="activeRoomTitle">Комната не выбрана</h2>
-            </div>
-            <div class="chat-head-right">
-              <button id="loadHistoryBtn" class="secondary-btn slim" type="button">Обновить</button>
-            </div>
-          </div>
-
-          <div id="messages" class="messages" aria-live="polite">
-            <div class="empty-state">
-              <p class="prompt">echomess</p>
-              <p>Войди, выбери или создай комнату — и начни общаться в реальном времени.</p>
-            </div>
-          </div>
-
-          <form id="messageForm" class="composer">
-            <div class="composer-input-wrap">
-              <label class="sr-only" for="messageInput">Сообщение</label>
-              <textarea id="messageInput" rows="1" maxlength="1000" placeholder="Написать сообщение... (Enter — отправить, Shift+Enter — перенос)" disabled></textarea>
-              <p id="composerHint" class="composer-hint" hidden>Выберите комнату, чтобы писать</p>
-            </div>
-            <button id="sendMessageBtn" class="send-btn" type="submit" disabled title="Отправить" aria-label="Отправить">↗</button>
-          </form>
-        </section>
-      </section>
-    </main>
-
-    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-    <script src="/app.js" defer></script>
-  </body>
+  <script src="js/app.js"></script>
+</body>
 </html>
