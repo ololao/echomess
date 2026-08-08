@@ -144,7 +144,7 @@ function fmtTime(iso) {
 /* ============================================================
    Точка входа
    ============================================================ */
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   // Обработка ссылки подтверждения из письма: /auth/url-callback?token=...
   const params = new URLSearchParams(window.location.search);
   const cbToken = params.get("token");
