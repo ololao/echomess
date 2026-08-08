@@ -431,6 +431,7 @@ function openCreateRoomModal() {
 function renderChatShell() {
   $("#chat-area").innerHTML = `
     <div class="chat-head">
+      <button class="back-btn" id="back-btn" type="button" aria-label="Назад">&larr;</button>
       <div class="title">${escapeHtml(State.currentRoom.name)}</div>
       <span class="status connecting" id="ws-status">подключение...</span>
     </div>
@@ -444,6 +445,7 @@ function renderChatShell() {
       <button type="submit" class="btn primary">Отправить</button>
     </form>
   `;
+  $("#back-btn").onclick = backToRooms;
   $("#composer").onsubmit = (e) => {
     e.preventDefault();
     const input = $("#message-input");
@@ -456,7 +458,12 @@ function renderChatShell() {
   msgs.onscroll = () => {
     if (msgs.scrollTop < 40 && State.hasMore) loadOlderMessages();
   };
-  document.body.classList.add("mobile-chat");
+  $("#app").classList.add("mobile-chat");
+}
+
+function backToRooms() {
+  $("#app").classList.remove("mobile-chat");
+  if (State.ws) { try { State.ws.close(); } catch {} }
 }
 
 /* ---------- Сообщения: загрузка ---------- */
