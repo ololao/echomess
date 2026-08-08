@@ -4,7 +4,7 @@
    API клиент
    ============================================================ */
 const API = {
-  token: sessionStorage.getItem("echomess_access") || null,
+  token: null,
 
   async _fetch(path, options = {}) {
     const headers = { ...(options.headers || {}) };
@@ -19,7 +19,7 @@ const API = {
       credentials: "same-origin",
     });
 
-    if (res.status === 401 && this.token) {
+    if (res.status === 401) {
       const refreshed = await this.refresh();
       if (refreshed) {
         headers["Authorization"] = `Bearer ${this.token}`;
@@ -40,7 +40,6 @@ const API = {
       if (!res.ok) return false;
       const data = await res.json();
       this.token = data.token;
-      sessionStorage.setItem("echomess_access", data.token);
       return true;
     } catch {
       return false;
@@ -49,11 +48,6 @@ const API = {
 
   setToken(t) {
     this.token = t;
-    sessionStorage.setItem("echomess_access", t);
-  },
-  clearToken() {
-    this.token = null;
-    sessionStorage.removeItem("echomess_access");
   },
 
   async register(name, email, password) {
@@ -160,8 +154,9 @@ window.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Если уже есть сессия — пробуем войти в приложение
-  if (API.token) {
+  // Пытаемся получить access-токен через refresh-куку (httpOnly)
+  const refreshed = await API.refresh();
+  if (refreshed) {
     enterApp();
   } else {
     showAuth();
@@ -313,13 +308,6 @@ async function enterApp() {
   await loadRooms();
 }
 
-function logout() {
-  API.clearToken();
-  State.currentRoom = null;
-  if (State.ws) { try { State.ws.close(); } catch {} }
-  location.reload();
-}
-
 /* ---------- Каркас приложения ---------- */
 function renderAppShell() {
   $("#app").innerHTML = `
@@ -334,7 +322,6 @@ function renderAppShell() {
       <div class="rooms-list" id="rooms-list"></div>
       <div class="sidebar-foot">
         <span class="who" id="who-am-i">${escapeHtml(State.user.name)}</span>
-        <button class="btn ghost sm" id="logout-btn" type="button">Выйти</button>
       </div>
     </aside>
     <main class="chat" id="chat-area">
@@ -345,7 +332,6 @@ function renderAppShell() {
     </main>
   `;
 
-  $("#logout-btn").onclick = logout;
   $("#create-room-btn").onclick = openCreateRoomModal;
 
   const searchInput = $("#room-search");
@@ -363,7 +349,6 @@ async function loadRooms(search = "") {
     renderRooms();
   } else {
     if (res.error.includes("401")) {
-      API.clearToken();
       showAuth();
     } else {
       toast(res.error, "error");
@@ -479,7 +464,7 @@ async function loadInitialMessages() {
   const now = new Date().toISOString();
   const res = await API.getMessages(State.currentRoom.id, "before", 50, now);
   if (!res.ok) {
-    if (res.error.includes("401")) { API.clearToken(); showAuth(); return; }
+    if (res.error.includes("401")) { showAuth(); return; }
     toast(res.error, "error");
     return;
   }
