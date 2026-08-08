@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from src.security import decrypt_text, encrypt_text
 from src.users import UsersService
 
 from .enums import Direction
@@ -27,7 +28,7 @@ class MessageService:
         if rez is not None:
             return [
                 MessageRead(
-                    data=x.data,
+                    data=decrypt_text(x.data),
                     created_at=x.created_at,
                     user_id=x.user_id,
                     room_id=x.room_id,
@@ -38,16 +39,17 @@ class MessageService:
         return rez
 
     async def save_message(self, room_id: str, data: str, user_id: str) -> MessageRead:
+        byte_data = encrypt_text(data)
         rez = await self.repository.save_message(
-            room_id=room_id, data=data, user_id=user_id
+            room_id=room_id, data=byte_data, user_id=user_id
         )
         if rez is None:
             raise ValueError("Failed to save the message!")
         user_name = await self.user_service.get_user(user_id=rez.user_id)
         return MessageRead(
-            data=rez.data,
+            data=decrypt_text(rez.data),
             created_at=rez.created_at,
             user_id=rez.user_id,
             room_id=rez.room_id,
-            user_name=(user_name.name if user_name is not None else 'DELETED USER'),
+            user_name=(user_name.name if user_name is not None else "DELETED USER"),
         )

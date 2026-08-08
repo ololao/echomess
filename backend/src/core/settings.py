@@ -7,6 +7,8 @@ parent_path = Path(__file__).parent.parent.parent.parent
 
 
 class Settings(BaseSettings):
+    MESSAGE_SECRET_KEY: str
+
     ALEMBIC_REVISION: bool = False
 
     REDIS_PASSWORD: str
@@ -57,6 +59,9 @@ class Settings(BaseSettings):
 
     def get_email_callback_url(self) -> str:
         return f"{self.SCHEMA}://{self.DOMAIN}/auth/url-callback"
+
+    def get_message_secret_key(self) -> bytes:
+        return (self.MESSAGE_SECRET_KEY).encode()
 
     model_config = SettingsConfigDict(
         extra="ignore",

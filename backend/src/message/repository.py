@@ -40,7 +40,7 @@ class MessageRepository:
             rez = await db.scalars(query)
             return rez.all()
 
-    async def save_message(self, room_id: str, data: str, user_id: str):
+    async def save_message(self, room_id: str, data: bytes, user_id: str):
         query = (
             insert(Message)
             .values(

@@ -6,6 +6,7 @@ from .jwt_secure import (
     decode_access_token,
     decode_refresh_token,
 )
+from .messages import decrypt_text, encrypt_text
 from .passwords import check_password, create_fast_hash, create_password
 
 __all__ = [
@@ -18,4 +19,6 @@ __all__ = [
     "create_tokens",
     "decode_access_token",
     "decode_refresh_token",
+    "decrypt_text",
+    "encrypt_text",
 ]
