@@ -366,7 +366,6 @@ function renderRooms() {
     <div class="room-item ${State.currentRoom && State.currentRoom.id === r.id ? "active" : ""}" data-id="${escapeHtml(r.id)}">
       <div style="flex:1;min-width:0">
         <div class="name">${escapeHtml(r.name)}</div>
-        <div class="id">${escapeHtml(r.id)}</div>
       </div>
     </div>
   `).join("");
