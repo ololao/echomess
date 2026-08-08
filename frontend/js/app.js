@@ -322,6 +322,7 @@ function renderAppShell() {
       <div class="rooms-list" id="rooms-list"></div>
       <div class="sidebar-foot">
         <span class="who" id="who-am-i">${escapeHtml(State.user.name)}</span>
+        <button class="btn ghost sm theme-toggle" id="theme-toggle-btn" type="button" title="Сменить тему" aria-label="Сменить тему"></button>
       </div>
     </aside>
     <main class="chat" id="chat-area">
@@ -339,6 +340,31 @@ function renderAppShell() {
     clearTimeout(State.searchTimer);
     State.searchTimer = setTimeout(() => loadRooms(searchInput.value.trim()), 350);
   };
+
+  initThemeToggle();
+}
+
+/* ---------- Тема оформления ---------- */
+function currentTheme() {
+  return document.documentElement.getAttribute("data-theme") || "light";
+}
+
+function applyThemeLabel() {
+  const btn = $("#theme-toggle-btn");
+  if (btn) btn.textContent = currentTheme() === "dark" ? "🌙" : "☀️";
+}
+
+function toggleTheme() {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try { localStorage.setItem("echomess-theme", next); } catch (e) {}
+  applyThemeLabel();
+}
+
+function initThemeToggle() {
+  applyThemeLabel();
+  const btn = $("#theme-toggle-btn");
+  if (btn) btn.onclick = toggleTheme;
 }
 
 /* ---------- Комнаты ---------- */

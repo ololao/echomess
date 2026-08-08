@@ -11,7 +11,35 @@
   --danger: #dc2626;
   --danger-hover: #b91c1c;
   --own: #dbeafe;
+  --own-border: #bfdbfe;
+  --active: #eff6ff;
   --ok: #16a34a;
+  --connecting: #d97706;
+  --focus-ring: rgba(37,99,235,.15);
+  --shadow: rgba(0,0,0,.08);
+  --toast-bg: #18181b;
+  --toast-fg: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  --bg: #18181b;
+  --panel: #232328;
+  --border: #3f3f46;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --danger: #ef4444;
+  --danger-hover: #f87171;
+  --own: #1e3a8a;
+  --own-border: #1d4ed8;
+  --active: #1e293b;
+  --ok: #22c55e;
+  --connecting: #f59e0b;
+  --focus-ring: rgba(59,130,246,.3);
+  --shadow: rgba(0,0,0,.4);
+  --toast-bg: #f4f4f5;
+  --toast-fg: #18181b;
 }
 
 html, body { height: 100%; }
@@ -68,7 +96,7 @@ body {
   font-weight: 600;
   color: var(--muted);
 }
-.tab.active { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.tab.active { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px var(--shadow); }
 
 /* ---------- Формы ---------- */
 .form { display: flex; flex-direction: column; gap: 14px; }
@@ -84,7 +112,7 @@ input, textarea {
   color: var(--text);
   width: 100%;
 }
-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus-ring); }
 
 /* ---------- Кнопки ---------- */
 .btn {
@@ -142,7 +170,7 @@ input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px
   gap: 10px;
 }
 .room-item:hover { background: var(--bg); }
-.room-item.active { background: #eff6ff; border-left: 3px solid var(--primary); padding-left: 11px; }
+.room-item.active { background: var(--active); border-left: 3px solid var(--primary); padding-left: 11px; }
 .room-item .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rooms-empty { padding: 24px 14px; color: var(--muted); text-align: center; font-size: 13px; }
 
@@ -185,7 +213,7 @@ input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px
 .chat-head .title { font-weight: 700; font-size: 16px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-head .status { font-size: 12px; color: var(--muted); }
 .chat-head .status.online { color: var(--ok); }
-.chat-head .status.connecting { color: #d97706; }
+.chat-head .status.connecting { color: var(--connecting); }
 
 .messages {
   flex: 1;
@@ -207,7 +235,7 @@ input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px
 }
 .msg .author { font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
 .msg .time { font-size: 11px; color: var(--muted); margin-top: 4px; }
-.msg.own { align-self: flex-end; background: var(--own); border-color: #bfdbfe; }
+.msg.own { align-self: flex-end; background: var(--own); border-color: var(--own-border); }
 .msg.own .author { color: var(--primary-hover); }
 .msg.sys { align-self: center; background: transparent; border: none; color: var(--muted); font-size: 13px; }
 
@@ -246,8 +274,8 @@ input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px
   align-items: center;
 }
 .toast {
-  background: #18181b;
-  color: #fff;
+  background: var(--toast-bg);
+  color: var(--toast-fg);
   padding: 10px 16px;
   border-radius: 8px;
   font-size: 14px;
