@@ -7,6 +7,8 @@ parent_path = Path(__file__).parent.parent.parent.parent
 
 
 class Settings(BaseSettings):
+    ALEMBIC_REVISION: bool = False
+
     REDIS_PASSWORD: str
 
     ACCESS_TOKEN_EXPIRE_MIN: int
@@ -22,6 +24,12 @@ class Settings(BaseSettings):
     DB_PORT: int = 5432
     DB_NAME: str
 
+    DEVDB_USER: str = "admin"
+    DEVDB_PASS: str | None = None
+    DEVDB_HOST: str = "localhost"
+    DEVDB_PORT: int = 5432
+    DEVDB_NAME: str = "echomess_alembic"
+
     SCHEMA: str
     DOMAIN: str
 
@@ -36,6 +44,16 @@ class Settings(BaseSettings):
 
     def get_db_url(self) -> str:
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    def get_devdb_url(self) -> str:
+        if self.DEVDB_PASS is None:
+            raise ValueError("Please enter your devdb pass to use this function")
+        return f"postgresql+asyncpg://{self.DEVDB_USER}:{self.DEVDB_PASS}@{self.DEVDB_HOST}:{self.DEVDB_PORT}/{self.DEVDB_NAME}"
+
+    def get_alembic_url(self) -> str:
+        if self.ALEMBIC_REVISION:
+            return self.get_devdb_url()
+        return self.get_db_url()
 
     def get_email_callback_url(self) -> str:
         return f"{self.SCHEMA}://{self.DOMAIN}/auth/url-callback"

@@ -3,6 +3,8 @@ from typing import Annotated
 from fastapi import Depends
 from fastapi.requests import HTTPConnection
 
+from src.users import UsersServiceDepends
+
 from .repository import MessageRepository
 from .services import MessageService
 
@@ -16,8 +18,10 @@ type MessageRepositoryDepends = Annotated[
 ]
 
 
-def get_message_service(repository: MessageRepositoryDepends):
-    return MessageService(repository=repository)
+def get_message_service(
+    repository: MessageRepositoryDepends, user_service: UsersServiceDepends
+):
+    return MessageService(repository=repository, user_service=user_service)
 
 
 type MessageServiceDepends = Annotated[MessageService, Depends(get_message_service)]

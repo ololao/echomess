@@ -5,9 +5,11 @@ description = "Simple Python messenger using Sebsocket's"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.19.0",
     "asyncpg>=0.31.0",
     "email-validator>=2.3.0",
     "fastapi>=0.141.1",
+    "gunicorn>=26.0.0",
     "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
     "loguru>=0.7.3",
@@ -20,17 +22,4 @@ dependencies = [
     "sqlalchemy>=2.0.51",
     "uvicorn[standard]>=0.52.1",
     "uvloop>=0.22.1",
-]
-
-[tool.ruff.lint]
-# only runtime-errors
-select = [
-    "E9",   # (SyntaxError, IndentationError)
-    "PLE",  # Pylint Errors
-    "F821",
-]
-
-ignore = [
-    "F401", # (imported but unused)
-    "F841", # (assigned but never used)
 ]

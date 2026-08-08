@@ -1,9 +1,13 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
+
+if TYPE_CHECKING:
+    from src.users import User
 
 
 class Message(Base):
@@ -17,3 +21,4 @@ class Message(Base):
     )
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
     room_id: Mapped[str] = mapped_column(ForeignKey("rooms.id"), nullable=False)
+    user: Mapped["User"] = relationship()
