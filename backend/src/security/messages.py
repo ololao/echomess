@@ -1,5 +1,4 @@
 from cryptography.fernet import Fernet
-
 from src.core import settings
 
 fernet = Fernet(key=settings.get_message_secret_key())

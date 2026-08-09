@@ -1,12 +1,18 @@
 import json
-from random import randrange
+import time
 from uuid import uuid4
 
-from fastapi import BackgroundTasks
-
+from fastapi import BackgroundTasks, HTTPException
+from redis.asyncio import Redis
 from src.auth.sessions import SessionManager
 from src.email import EmailSender
-from src.security import JWTTokens, check_password, create_password, create_tokens
+from src.security import (
+    JWTTokens,
+    check_password,
+    create_password,
+    create_tokens,
+    generate_code,
+)
 from src.users import UsersService, UserStatus
 
 
@@ -17,7 +23,7 @@ class CodeService:
         user_service: UsersService,
         session_manager: SessionManager,
     ) -> None:
-        self.redis = redis
+        self.redis: Redis = redis
         self.user_service: UsersService = user_service
         self.session_manager: SessionManager = session_manager
 
@@ -29,10 +35,12 @@ class CodeService:
             [same_user.email == email, check_password(password, same_user.password)]
         ):
             raise ValueError("Incorrect login details")
-        code = str(randrange(100000, 1000000))
+        code = generate_code()
         hash_code = create_password(code)
         attempt_id = str(uuid4())
-        callback_data = json.dumps({"code": hash_code, "user_id": same_user.id})
+        callback_data = json.dumps(
+            {"code": hash_code, "user_id": same_user.id, "try": 0}
+        )
         await self.redis.set(
             f"code-callback:{attempt_id}", callback_data, ex=300
         )  # frontend save attempt to storage
@@ -44,6 +52,23 @@ class CodeService:
         if rawdata is None:
             raise ValueError("Incorrect login details")
         callback_data = json.loads(rawdata)
+        key = f"code-callback-try:{callback_data['user_id']}"
+        current_time = str(time.time())
+        block_time = float(current_time) - 3600
+        async with self.redis.pipeline(transaction=True) as pipe:
+            pipe.zadd(key, {uuid4(): current_time})
+            pipe.zremrangebyscore(key, "-inf", block_time)
+            pipe.zcard(key)
+            pipe.expire(key, 3600)
+            _, _, try_count = await pipe.execute()
+        if try_count > 20:
+            raise HTTPException(429, detail="Too many login try")
+        callback_data["try"] += 1
+        if callback_data["try"] > 5:
+            raise HTTPException(429, detail="Too many login try")
+        await self.redis.set(
+            f"code-callback:{attempt_id}", json.dumps(callback_data), ex=300
+        )
         if not check_password(code, callback_data["code"]):
             raise ValueError("Incorrect code, please try again")
         await self.redis.delete(f"code-callback:{attempt_id}")

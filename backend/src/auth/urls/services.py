@@ -1,11 +1,10 @@
 from uuid import uuid4
 
 from fastapi import BackgroundTasks
-
 from src.auth.sessions import SessionManager
 from src.core import settings
 from src.email import EmailSender
-from src.security import JWTTokens, create_fast_hash, create_tokens
+from src.security import JWTTokens, create_fast_hash, create_tokens, generate_token
 from src.users import UsersService, UserStatus
 
 
@@ -33,7 +32,7 @@ class UrlService:
         user_id = await self.user_service.create_user(
             name=name, email=email, password=password, status=UserStatus.PENDING
         )
-        url_token = str(uuid4())
+        url_token = generate_token()
         url = generate_url(url_token)
         await self.redis.set(
             f"url-callback:{create_fast_hash(url_token)}", user_id, ex=300

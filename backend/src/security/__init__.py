@@ -1,3 +1,4 @@
+from .code_token_generator import generate_code, generate_token
 from .jwt_secure import (
     AccessToken,
     JWTTokens,
@@ -21,4 +22,6 @@ __all__ = [
     "decode_refresh_token",
     "decrypt_text",
     "encrypt_text",
+    "generate_code",
+    "generate_token",
 ]
