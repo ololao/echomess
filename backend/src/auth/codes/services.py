@@ -56,7 +56,7 @@ class CodeService:
         current_time = str(time.time())
         block_time = float(current_time) - 3600
         async with self.redis.pipeline(transaction=True) as pipe:
-            pipe.zadd(key, {uuid4(): current_time})
+            pipe.zadd(key, {str(uuid4()): current_time})
             pipe.zremrangebyscore(key, "-inf", block_time)
             pipe.zcard(key)
             pipe.expire(key, 3600)
@@ -75,8 +75,14 @@ class CodeService:
         user_id = callback_data["user_id"]
         session_id = str(uuid4())
         refresh_token_id = str(uuid4())
+        user_session_age = await self.redis.get(f"user_session_age:{user_id}")
+        if not isinstance(user_session_age, str):
+            user_session_age = "0"
         await self.session_manager.create_session(
-            session_id=session_id, user_id=user_id, token_id=refresh_token_id
+            session_id=session_id,
+            user_id=user_id,
+            token_id=refresh_token_id,
+            session_age=user_session_age,
         )
         tokens: JWTTokens = create_tokens(
             access={"sub": user_id},

@@ -2,7 +2,6 @@ import json
 from uuid import uuid4
 
 from redis.asyncio import Redis
-
 from src.core import settings
 from src.security import JWTTokens, RefreshToken, create_tokens, decode_refresh_token
 
@@ -20,6 +19,7 @@ class JwtRefresher:
             old_data is None
             or (json.loads(old_data))["token_id"] != refresh_token_obj.token_id
         ):
+            await self.redis.incr(f"user_session_age:{user_id}")
             raise ValueError("Incorrect token")
         refresh_token_id = str(uuid4())
         data = json.dumps({"user_id": user_id, "token_id": refresh_token_id})

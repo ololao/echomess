@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import jwt
-
 from src.core import settings
 
 

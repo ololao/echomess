@@ -1,7 +1,6 @@
 import json
 
 from redis.asyncio import Redis
-
 from src.core import settings
 
 
@@ -9,8 +8,12 @@ class SessionManager:
     def __init__(self, redis: Redis) -> None:
         self.redis = redis
 
-    async def create_session(self, session_id: str, user_id: str, token_id: str):
-        data = json.dumps({"user_id": user_id, "token_id": token_id})
+    async def create_session(
+        self, session_id: str, user_id: str, token_id: str, session_age: str
+    ):
+        data = json.dumps(
+            {"user_id": user_id, "token_id": token_id, "session_age": session_age}
+        )
         await self.redis.set(
             f"session:{user_id}:{session_id}",
             data,

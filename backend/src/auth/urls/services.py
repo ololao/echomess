@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from fastapi import BackgroundTasks
+from redis.asyncio import Redis
 from src.auth.sessions import SessionManager
 from src.core import settings
 from src.email import EmailSender
@@ -19,7 +20,7 @@ class UrlService:
         user_service: UsersService,
         session_manager: SessionManager,
     ) -> None:
-        self.redis = redis
+        self.redis: Redis = redis
         self.user_service: UsersService = user_service
         self.session_manager: SessionManager = session_manager
 
@@ -29,9 +30,9 @@ class UrlService:
         same_user = await self.user_service.get_user_by_email(email)
         if same_user is not None:
             raise ValueError("This email is already in use!")
-        user_id = await self.user_service.create_user(
+        user_id = str(await self.user_service.create_user(
             name=name, email=email, password=password, status=UserStatus.PENDING
-        )
+        ))
         url_token = generate_token()
         url = generate_url(url_token)
         await self.redis.set(
@@ -42,14 +43,20 @@ class UrlService:
     async def url_callback(self, token: str) -> JWTTokens:
         callback_key = f"url-callback:{create_fast_hash(token)}"
         user_id = await self.redis.get(callback_key)
-        if user_id is None:
-            raise ValueError("Invalid token")
+        if not isinstance(user_id, str) :
+            raise ValueError("Invalid token")  # noqa: TRY004
         await self.redis.delete(callback_key)
         await self.user_service.change_status(user_id=user_id, status=UserStatus.ACTIVE)
         session_id = str(uuid4())
         refresh_token_id = str(uuid4())
+        user_session_age = await self.redis.get(f"user_session_age:{user_id}")
+        if not isinstance(user_session_age, str):
+            user_session_age = '0'
         await self.session_manager.create_session(
-            session_id=session_id, user_id=user_id, token_id=refresh_token_id
+            session_id=session_id,
+            user_id=user_id,
+            token_id=refresh_token_id,
+            session_age=user_session_age,
         )
         tokens: JWTTokens = create_tokens(
             access={"sub": user_id},
