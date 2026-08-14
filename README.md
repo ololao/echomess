@@ -1,6 +1,6 @@
-# ECHOMESSS ✰
+# ECHOMESS ✰
 
-## ABOUT ECHOMESSS
+## ABOUT ECHOMESS
 
 EchoMess is a lightweight, real-time messaging application built around WebSockets. Users register with an email address, confirm it via a link, and then create or join persistent chat rooms where messages are delivered instantly. A short confirmation code is sent on each login for an extra layer of verification. The interface is fully responsive and works equally well on desktop and mobile browsers, with a one-click switch between light and dark themes.
 
