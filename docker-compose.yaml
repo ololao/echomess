@@ -22,6 +22,11 @@ services:
       retries: 3
     networks:
       - internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
 
   chat:
     build:
@@ -51,9 +56,11 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
-    volumes:
-      - ./logs:/backend/logs
-    dns_search: ""
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
     networks:
       - external
       - internal
@@ -71,6 +78,11 @@ services:
       - external
       - internal
       - web_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
 
   db:
     image: postgres:16.4
@@ -89,6 +101,11 @@ services:
       retries: 3
     networks:
       - internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
 
 volumes:
   redis-data:

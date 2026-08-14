@@ -1,10 +1,10 @@
 from fastapi import FastAPI
-from starlette.middleware.sessions import SessionMiddleware
-
 from src.auth import auth_router
 from src.core import settings
+from src.exc_handlers import registrar
 from src.message import message_router
 from src.rooms import room_router
+from starlette.middleware.sessions import SessionMiddleware
 
 from .lifespan import lifespan
 from .websockets import websocket_router
@@ -22,3 +22,4 @@ app.include_router(websocket_router)
 app.include_router(auth_router)
 app.include_router(room_router)
 app.include_router(message_router)
+registrar(app)

@@ -34,7 +34,7 @@ jobs:
           script: |
             bash -c '
               set -e
-              cd ~/echomess/
+              cd ~/projects/echomess/
               BRANCH="${{ github.ref_name }}"
               docker compose down
               git fetch --all
