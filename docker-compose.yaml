@@ -59,22 +59,19 @@ services:
       - internal
 
   nginx:
-    image: jonasal/nginx-certbot:latest
+    image: nginx:alpine
+    container_name: echomess-nginx
     restart: always
-    environment:
-      - CERTBOT_EMAIL=${DOMAIN_EMAIL}
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/user_conf.d/app.conf:ro
-      - letsencrypt_data:/etc/letsencrypt
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/app.conf:ro
       - ./frontend:/usr/share/nginx/html
     depends_on:
       - chat
     networks:
       - external
       - internal
+      - web_net
+
   db:
     image: postgres:16.4
     restart: always
@@ -97,8 +94,9 @@ volumes:
   redis-data:
     driver: local
   pg_data:
-  letsencrypt_data:
 
 networks:
   external:
   internal:
+  web_net:
+    external: true
