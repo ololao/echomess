@@ -108,6 +108,22 @@ services:
         max-size: "20m"
         max-file: "5"
 
+  migration:
+      image: arigaio/atlas:latest
+      restart: "no"
+      depends_on:
+        postgres:
+          condition: service_healthy
+      volumes:
+        - ./migrations:/migrations:ro
+      command:
+        - migrate
+        - apply
+        - --url
+        - postgres://app_user:app_password@postgres:5432/app_db?sslmode=disable
+        - --dir
+        - file:///migrations
+
 volumes:
   redis-data:
     driver: local
