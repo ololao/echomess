@@ -15,7 +15,7 @@ On the backend, EchoMess runs on **FastAPI** served by **Gunicorn** with **Uvico
 - python
 - fastapi
 - loguru
-- alembic
+- atlas (good for postgres)
 - gunicorn & uvicorn
 - resend for emails
 - JWT authentication & authorization
