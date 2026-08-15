@@ -22,5 +22,3 @@ WORKDIR /backend
 
 COPY --from=builder /backend/.venv /backend/.venv
 COPY backend/ .
-
-ENTRYPOINT [ "./alembic-upgrader.sh" ]
