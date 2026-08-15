@@ -116,11 +116,17 @@ services:
           condition: service_healthy
       volumes:
         - ./migrations:/migrations:ro
+      environment:
+        - DB_USER=${DB_USER}
+        - DB_PASS=${DB_PASS}
+        - DB_HOST=${DB_HOST}
+        - DB_PORT=${DB_PORT}
+        - DB_NAME=${DB_NAME}
       command:
         - migrate
         - apply
         - --url
-        - postgres://app_user:app_password@postgres:5432/app_db?sslmode=disable
+        - postgres://$$DB_USER:$$DB_PASS@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=disable
         - --dir
         - file:///migrations
 
