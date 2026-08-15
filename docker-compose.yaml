@@ -112,7 +112,7 @@ services:
       image: arigaio/atlas:latest
       restart: "no"
       depends_on:
-        postgres:
+        db:
           condition: service_healthy
       volumes:
         - ./migrations:/migrations:ro
