@@ -109,26 +109,26 @@ services:
         max-file: "5"
 
   migration:
-      image: arigaio/atlas:latest
-      restart: "no"
-      depends_on:
-        db:
-          condition: service_healthy
-      volumes:
-        - ./migrations:/migrations:ro
-      environment:
-        - DB_USER=${DB_USER}
-        - DB_PASS=${DB_PASS}
-        - DB_HOST=${DB_HOST}
-        - DB_PORT=${DB_PORT}
-        - DB_NAME=${DB_NAME}
-      command:
-        - migrate
-        - apply
-        - --url
-        - postgres://$$DB_USER:$$DB_PASS@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=disable
-        - --dir
-        - file:///migrations
+    image: arigaio/atlas:latest
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations:ro
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+    command:
+      - migrate
+      - apply
+      - --url
+      - postgres://$$DB_USER:$$DB_PASS@$$DB_HOST:$$DB_PORT/$$DB_NAME?sslmode=disable
+      - --dir
+      - file:///migrations
 
 volumes:
   redis-data:
