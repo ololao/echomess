@@ -40,6 +40,28 @@ class UsersRepository:
             await db.commit()
             return user_id
 
+    async def create_google_user(
+        self, name: str, email: str, google_id: str, status: UserStatus
+    ):
+        user_id = str(uuid4())
+        query = (
+            insert(User)
+            .values(
+                {
+                    "id": user_id,
+                    "name": name,
+                    "email": email,
+                    "google_id": google_id,
+                    "status": status,
+                }
+            )
+            .returning(User.id)
+        )
+        async for db in self.db():
+            await db.execute(query)
+            await db.commit()
+            return user_id
+
     async def change_status(self, user_id: str, status: UserStatus):
         query = select(User).where(User.id == user_id)
         async for db in self.db():
@@ -52,6 +74,12 @@ class UsersRepository:
 
     async def get_user(self, user_id: str):
         query = select(User).where(User.id == user_id)
+        async for db in self.db():
+            user: User | None = await db.scalar(query)
+            return user
+
+    async def get_google_user(self, google_id: str):
+        query = select(User).where(User.google_id == google_id)
         async for db in self.db():
             user: User | None = await db.scalar(query)
             return user

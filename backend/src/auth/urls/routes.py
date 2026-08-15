@@ -2,10 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
-
 from src.security import JWTTokens
 
-from ..schemas import AccessToken
 from .dependency import UrlServiceDepends
 from .schemas import Registry
 
@@ -36,6 +34,6 @@ async def url_callback(
     try:
         tokens: JWTTokens = await url_service.url_callback(token=token)
         request.session["refresh_key"] = tokens.refresh
-        return AccessToken(token=tokens.access)
+        return JSONResponse(status_code=200, content='')
     except ValueError as e:
         raise HTTPException(400, detail=str(e))

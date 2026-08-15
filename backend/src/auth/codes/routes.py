@@ -1,9 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import JSONResponse
-
 from src.security import JWTTokens
 
-from ..schemas import AccessToken
 from .dependency import CodeServiceDepends
 from .schemas import Attempt, CodeCallbackData, LoginCreate
 
@@ -36,6 +34,6 @@ async def code_callback(
             code=callback_data.code, attempt_id=callback_data.attempt_id
         )
         request.session["refresh_key"] = tokens.refresh
-        return AccessToken(token=tokens.access)
+        return JSONResponse(status_code=202, content='')
     except ValueError as e:
         raise HTTPException(400, detail=str(e))

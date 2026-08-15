@@ -133,6 +133,38 @@ input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px
 .btn.danger:hover:not(:disabled) { background: var(--danger-hover); }
 .btn.sm { padding: 6px 10px; font-size: 13px; }
 
+/* ---------- Вход через Google ---------- */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.btn.google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: #fff;
+  color: #1f1f1f;
+  border-color: var(--border);
+}
+.btn.google:hover:not(:disabled) { background: #f8f9fa; color: #1f1f1f; }
+/* Фирменная кнопка Google остаётся белой и в тёмной теме. */
+:root[data-theme="dark"] .btn.google { background: #fff; color: #1f1f1f; }
+:root[data-theme="dark"] .btn.google:hover:not(:disabled) { background: #f1f3f4; }
+.btn.google svg { flex-shrink: 0; }
+
 /* ---------- Чат: каркас ---------- */
 #app {
   height: 100%;

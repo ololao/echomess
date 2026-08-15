@@ -31,6 +31,8 @@ class CodeService:
         same_user = await self.user_service.get_user_by_email(email)
         if same_user is None or same_user.status != UserStatus.ACTIVE:
             raise ValueError("This user does not exist")
+        if same_user.google_id is not None or same_user.password is None:
+            raise ValueError("Incorrect login details")
         if not all(
             [same_user.email == email, check_password(password, same_user.password)]
         ):

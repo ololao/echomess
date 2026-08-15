@@ -11,9 +11,14 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    name: Mapped[str] = mapped_column(String(10))
+    google_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None, unique=True
+    )
+    name: Mapped[str] = mapped_column(String(50))
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(255))
+    password: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

@@ -1,6 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request
-
-from src.dependency import ActiveUser
 from src.security import JWTTokens
 
 from ..schemas import AccessToken

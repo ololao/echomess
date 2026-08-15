@@ -145,8 +145,16 @@ function fmtTime(iso) {
    Точка входа
    ============================================================ */
 window.addEventListener("DOMContentLoaded", async () => {
-  // Обработка ссылки подтверждения из письма: /auth/url-callback?token=...
   const params = new URLSearchParams(window.location.search);
+
+  // Обработка колбэка Google: /auth/google/callback?code=...&state=...
+  const onGoogleCallbackPath = window.location.pathname.replace(/\/$/, "").endsWith("/auth/google/callback");
+  if (onGoogleCallbackPath) {
+    handleGoogleCallback(params);
+    return;
+  }
+
+  // Обработка ссылки подтверждения из письма: /auth/url-callback?token=...
   const cbToken = params.get("token");
   const onCallbackPath = window.location.pathname.replace(/\/$/, "").endsWith("/auth/url-callback");
   if (onCallbackPath && cbToken) {
@@ -164,6 +172,66 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* ============================================================
+   Вход через Google
+   ============================================================ */
+async function handleGoogleCallback(params) {
+  $("#auth").classList.add("hidden");
+  $("#email-callback").classList.remove("hidden");
+  const status = $("#callback-status");
+
+  const finishWithError = (msg) => {
+    status.textContent = msg;
+    toast(msg, "error");
+    setTimeout(() => {
+      history.replaceState({}, "", "/");
+      showAuth();
+    }, 1500);
+  };
+
+  const code = params.get("code");
+  if (!code) {
+    // Пользователь отменил вход на стороне Google (error=access_denied и т.п.)
+    finishWithError("Вход через Google отменён.");
+    return;
+  }
+
+  status.textContent = "Завершаем вход через Google...";
+
+  // Проксируем code/state бэкенду: он обменяет код, установит refresh-куку сессии.
+  // При ошибке бэкенд отвечает редиректом на /login?error=auth_failed — fetch
+  // пойдёт по нему и получит HTML SPA, поэтому проверяем и res.redirected.
+  const q = new URLSearchParams({ code });
+  const state = params.get("state");
+  if (state) q.set("state", state);
+
+  let res;
+  try {
+    res = await fetch(`/api/auth/google/callback?${q}`, { credentials: "same-origin" });
+  } catch {
+    finishWithError("Не удалось связаться с сервером.");
+    return;
+  }
+
+  if (!res.ok || res.redirected) {
+    finishWithError("Не удалось войти через Google.");
+    return;
+  }
+
+  const refreshed = await API.refresh();
+  if (!refreshed) {
+    finishWithError("Не удалось войти через Google.");
+    return;
+  }
+
+  status.textContent = "Готово! Перенаправляем в чат...";
+  toast("Вы вошли через Google!", "ok");
+  setTimeout(() => {
+    history.replaceState({}, "", "/");
+    enterApp();
+  }, 800);
+}
+
+/* ============================================================
    Подтверждение почты по ссылке
    ============================================================ */
 async function handleEmailCallback(token) {
@@ -173,13 +241,17 @@ async function handleEmailCallback(token) {
 
   const res = await API.urlCallback(token);
   if (res.ok) {
-    API.setToken(res.data.token);
-    status.textContent = "Готово! Перенаправляем в чат...";
-    toast("Почта подтверждена. Добро пожаловать!", "ok");
-    setTimeout(() => {
-      history.replaceState({}, "", "/");
-      enterApp();
-    }, 1200);
+    const refreshed = await API.refresh();
+    if (refreshed) {
+      status.textContent = "Готово! Перенаправляем в чат...";
+      toast("Почта подтверждена. Добро пожаловать!", "ok");
+      setTimeout(() => {
+        history.replaceState({}, "", "/");
+        enterApp();
+      }, 1200);
+      return;
+    }
+    status.textContent = "Не удалось войти: сессия не установлена.";
   } else {
     status.innerHTML = `Не удалось подтвердить почту: ${escapeHtml(res.error)}.<br>Возможно, ссылка устарела (она действует 5 минут).`;
   }
@@ -211,6 +283,11 @@ function showAuth() {
   tabLogin.onclick = () => switchTab("login");
   tabRegister.onclick = () => switchTab("register");
 
+  // Вход через Google: полная навигация на бэкенд, дальше редирект на Google
+  $("#google-btn").onclick = () => {
+    window.location.href = "/api/auth/google/login";
+  };
+
   // Вход: email+пароль -> отправка кода
   loginForm.onsubmit = async (e) => {
     e.preventDefault();
@@ -239,9 +316,14 @@ function showAuth() {
     const res = await API.codeCallback(attemptId, code);
     btn.disabled = false;
     if (res.ok) {
-      API.setToken(res.data.token);
-      toast("Вы вошли!", "ok");
-      enterApp();
+      // Бэкенд кладёт refresh-токен в сессию-печеньку; access получаем через /refresh.
+      const refreshed = await API.refresh();
+      if (refreshed) {
+        toast("Вы вошли!", "ok");
+        enterApp();
+      } else {
+        toast("Не удалось завершить вход", "error");
+      }
     } else {
       toast(res.error, "error");
     }
