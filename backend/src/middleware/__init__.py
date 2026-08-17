@@ -1,3 +1,3 @@
-from .logger_middleware import logger_middleware
+from .logger_middleware import LogerMiddleware
 
-__all__ = ('logger_middleware',)
+__all__ = ('LogerMiddleware',)

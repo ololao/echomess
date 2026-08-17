@@ -2,11 +2,18 @@
 
 from uuid import uuid4
 
-from fastapi import Request
 from src.core import request_id
 
 
-async def logger_middleware(request: Request, call_next):
-    request_id.set(str(uuid4()))
-    responce = await call_next(request)
-    return responce
+class LogerMiddleware:
+    def __init__(self, app):
+        self.app = app
+    async def __call__(self, scope, receive, send):
+        if scope['type'] in ('http', 'websocket'):
+            token = request_id.set(str(uuid4()))
+            try:
+                await self.app(scope, receive, send)
+            finally:
+                request_id.reset(token)
+        else: # lifespan
+            await self.app(scope, receive, send)
