@@ -1,13 +1,13 @@
-from typing import Annotated
+from typing import Annotated, NoReturn
 
 from fastapi import Depends, HTTPException, WebSocketException, status
-from starlette.requests import HTTPConnection
-
+from src.core import user_id
 from src.security import decode_access_token
 from src.users import User, UsersServiceDepends, UserStatus
+from starlette.requests import HTTPConnection
 
 
-def raise_not_authenticated(connection: HTTPConnection):
+def raise_not_authenticated(connection: HTTPConnection) -> NoReturn:
     if connection.scope["type"] == "websocket":
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
     raise HTTPException(
@@ -33,15 +33,18 @@ async def get_current_user(
     token: Annotated[str, Depends(get_bearer_token)],
     user_service: UsersServiceDepends,
 ):
-    try:
-        token_data = decode_access_token(token)
-    except ValueError:
-        raise HTTPException(401)
-    user: User | None = await user_service.get_user(user_id=token_data.sub)
-    if user is None:
-        raise_not_authenticated(connection)
-    return user
-
+        try:
+            token_data = decode_access_token(token)
+        except ValueError:
+            raise HTTPException(401)
+        user: User | None = await user_service.get_user(user_id=token_data.sub)
+        if user is None:
+            raise_not_authenticated(connection)
+        try:
+            context_token = user_id.set(user.id)
+            yield user
+        finally:
+            user_id.reset(context_token)
 
 type CurrentUser = Annotated[User, Depends(get_current_user)]
 
