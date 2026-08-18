@@ -1,5 +1,6 @@
 import sys
 
+import sentry_sdk
 from loguru import logger
 
 from .logger_context import request_id, user_id
@@ -12,8 +13,11 @@ logger.add(
     diagnose=False 
 )
 def patcher(record):
-    record["extra"]["request_id"] = request_id.get()
-    record["extra"]["user_id"] = user_id.get()
+    current_request_id, current_user_id = request_id.get(), user_id.get()
+    record["extra"]["request_id"] = current_request_id
+    record["extra"]["user_id"] = current_user_id
+    sentry_sdk.set_user({'id':current_user_id, 'request_id':current_request_id})
+    sentry_sdk.add_breadcrumb(message=record['message'], level=record['level'].name)
 logger.configure(patcher=patcher)
 
 logr = logger

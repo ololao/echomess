@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET:str
     GOOGLE_REDIRECT_URL:str
 
+    SENTRY_DSN:str
+    APP_VERSION:str = 'unknown'
+
     def get_redis_url(self):
         return f"redis://:{self.REDIS_PASSWORD}@redis:6379/0"
 

@@ -1,3 +1,4 @@
+import sentry_sdk
 from fastapi import FastAPI
 from src.auth import auth_router
 from src.core import settings
@@ -10,6 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from .lifespan import lifespan
 from .websockets import websocket_router
 
+sentry_sdk.init(dsn=settings.SENTRY_DSN,release=settings.APP_VERSION)
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
 app.add_middleware(
     SessionMiddleware,
@@ -24,4 +26,5 @@ app.include_router(websocket_router)
 app.include_router(auth_router)
 app.include_router(room_router)
 app.include_router(message_router)
-registrar(app)
+
+registrar(app) # add exc_handlers to app 

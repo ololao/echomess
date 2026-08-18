@@ -40,5 +40,5 @@ jobs:
               git fetch --all
               git switch "$BRANCH"
               git pull origin "$BRANCH"
-              docker compose up --build -d
+              COMMIT_SHA="${{ github.sha }}" docker compose up --build -d
             '
