@@ -15,6 +15,7 @@ dependencies = [
     "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
     "loguru>=0.7.3",
+    "prometheus-fastapi-instrumentator>=8.1.0",
     "pwdlib[argon,argon2,argonv2]>=0.3.0",
     "pydantic-settings>=2.14.2",
     "pyjwt>=2.13.0",

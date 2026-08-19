@@ -1,5 +1,6 @@
 import sentry_sdk
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 from src.auth import auth_router
 from src.core import settings
 from src.exc_handlers import registrar
@@ -11,8 +12,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from .lifespan import lifespan
 from .websockets import websocket_router
 
-sentry_sdk.init(dsn=settings.SENTRY_DSN,release=settings.APP_VERSION)
+sentry_sdk.init(dsn=settings.SENTRY_DSN, release=settings.APP_VERSION)
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
+_ = Instrumentator().instrument(app).expose(app)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.COOKIE_KEY,
@@ -27,4 +29,4 @@ app.include_router(auth_router)
 app.include_router(room_router)
 app.include_router(message_router)
 
-registrar(app) # add exc_handlers to app 
+registrar(app)  # add exc_handlers to app
